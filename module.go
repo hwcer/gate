@@ -5,6 +5,7 @@ import (
 	"github.com/hwcer/cosgo"
 	"github.com/hwcer/cosnet/message"
 	"github.com/hwcer/cosrpc/xclient"
+	"github.com/hwcer/cosrpc/xserver"
 	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/scc"
 	"github.com/soheilhy/cmux"
@@ -42,17 +43,32 @@ func (this *module) Init() (err error) {
 	} else if Options.Gate.Address[0:i] == "" {
 		Options.Gate.Address = "0.0.0.0" + Options.Gate.Address
 	}
+	//加载RPCX配置
 	if err = cosgo.Config.Unmarshal(xshare.Options); err != nil {
 		return
 	}
-	return nil
-}
-func (this *module) Start() error {
+	if Options.Gate.Broadcast == 1 {
+		s := xclient.Service(Options.Gate.Name)
+		if err = s.Merge(Service()); err != nil {
+			return err
+		}
+	} else if Options.Gate.Broadcast == 2 {
+		service := xserver.Service(Options.Gate.Name)
+		if err = service.Merge(Service()); err != nil {
+			return
+		}
+		if err = xserver.Start(); err != nil {
+			return err
+		}
+	}
 
-	if err := xclient.Default.Start(); err != nil {
+	if err = xclient.Start(); err != nil {
 		return err
 	}
 
+	return nil
+}
+func (this *module) Start() error {
 	ln, err := net.Listen("tcp", Options.Gate.Address)
 	if err != nil {
 		return err
@@ -89,9 +105,18 @@ func (this *module) Close() (err error) {
 		_ = this.Server.Close()
 		this.mux.Close()
 	} else if Options.Gate.Protocol.Has(protocolTypeTCP) {
-		return this.Socket.Close()
+		err = this.Socket.Close()
 	} else if Options.Gate.Protocol.Has(protocolTypeHTTP) {
-		return this.Server.Close()
+		err = this.Server.Close()
+	}
+	if err != nil {
+		return err
+	}
+	if err = xclient.Close(); err != nil {
+		return
+	}
+	if Options.Gate.Broadcast == 2 {
+		err = xserver.Close()
 	}
 	return
 }

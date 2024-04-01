@@ -2,20 +2,26 @@ package gate
 
 import (
 	"github.com/hwcer/cosnet"
-	"github.com/hwcer/cosrpc/xclient"
 	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/logger"
+	"github.com/hwcer/registry"
 )
 
-var Service = xclient.Service(Name)
+var rs = registry.New(nil)
 
 func init() {
-	RegisterPrivateService(send)
-	RegisterPrivateService(broadcast)
+	Register(send)
+	Register(broadcast)
 }
 
-func RegisterPrivateService(i any, prefix ...string) {
-	if err := Service.Register(i, prefix...); err != nil {
+func Service() *registry.Service {
+	return rs.Service(Options.Gate.Name)
+}
+
+// Register 注册协议，用于服务器推送消息
+func Register(i any, prefix ...string) {
+	s := Service()
+	if err := s.Register(i, prefix...); err != nil {
 		logger.Fatal("%v", err)
 	}
 }
