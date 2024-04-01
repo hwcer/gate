@@ -1,0 +1,15 @@
+
+[rpcx]
+#redis="172.23.233.25:6379?db=0"
+#################以下配置按服务器取舍#######################
+[gate]
+address=":8000"
+protocol=3    #1-短链接，2-长连接，3-长短链接全开
+#网关转发规则
+#process : 进程内调用
+#discovery ：服务器发现,必须配置rpcx.redis
+[service]
+game="127.0.0.1:8100"
+[metadata]
+uuid="uuid"
+guid="guid"
