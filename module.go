@@ -6,7 +6,7 @@ import (
 	"github.com/hwcer/cosnet/message"
 	"github.com/hwcer/cosrpc/xclient"
 	"github.com/hwcer/cosrpc/xserver"
-	"github.com/hwcer/cosrpc/xshare"
+	"github.com/hwcer/gate/options"
 	"github.com/hwcer/scc"
 	"github.com/soheilhy/cmux"
 	"net"
@@ -14,46 +14,41 @@ import (
 	"time"
 )
 
-var mod = &module{}
-
-func init() {
-	mod.Id = "gate"
-}
+var mod = &Module{Module: cosgo.Module{Id: options.Name}}
+var opt = options.Options
 
 func New() cosgo.IModule {
 	return mod
 }
 
-type module struct {
+type Module struct {
 	cosgo.Module
 	mux    cmux.CMux
 	Server *server
 	Socket *socket
 }
 
-func (this *module) Init() (err error) {
-	if err = cosgo.Config.Unmarshal(Options); err != nil {
+func (this *Module) Init() (err error) {
+	if err = cosgo.Config.Unmarshal(opt); err != nil {
 		return
 	}
-	if Options.Gate.Address == "" {
+	if opt.Gate.Address == "" {
 		return errors.New("网关地址没有配置")
 	}
-	if i := strings.Index(Options.Gate.Address, ":"); i < 0 {
+	if i := strings.Index(opt.Gate.Address, ":"); i < 0 {
 		return errors.New("网关地址配置错误,格式: ip:port")
-	} else if Options.Gate.Address[0:i] == "" {
-		Options.Gate.Address = "0.0.0.0" + Options.Gate.Address
+	} else if opt.Gate.Address[0:i] == "" {
+		opt.Gate.Address = "0.0.0.0" + opt.Gate.Address
 	}
-	//加载RPCX配置
-	if err = cosgo.Config.Unmarshal(xshare.Options); err != nil {
-		return
-	}
-	if Options.Gate.Broadcast == 1 {
-		s := xclient.Service(Options.Gate.Name)
+	opt.Rpcx.BasePath = opt.Appid
+
+	if opt.Gate.Broadcast == 1 {
+		s := xclient.Service(options.Name)
 		if err = s.Merge(Service()); err != nil {
 			return err
 		}
-	} else if Options.Gate.Broadcast == 2 {
-		service := xserver.Service(Options.Gate.Name)
+	} else if opt.Gate.Broadcast == 2 {
+		service := xserver.Service(options.Name)
 		if err = service.Merge(Service()); err != nil {
 			return
 		}
@@ -68,12 +63,12 @@ func (this *module) Init() (err error) {
 
 	return nil
 }
-func (this *module) Start() error {
-	ln, err := net.Listen("tcp", Options.Gate.Address)
+func (this *Module) Start() error {
+	ln, err := net.Listen("tcp", opt.Gate.Address)
 	if err != nil {
 		return err
 	}
-	if Options.Gate.Protocol.Has(protocolTypeALL) {
+	if opt.Gate.Protocol.Has(options.ProtocolTypeALL) {
 		this.mux = cmux.New(ln)
 		sv := this.mux.Match(cmux.HTTP1Fast())
 		if err = this.Server.Start(sv); err != nil {
@@ -90,23 +85,23 @@ func (this *module) Start() error {
 		if errors.Is(err, scc.ErrorTimeout) {
 			err = nil
 		}
-	} else if Options.Gate.Protocol.Has(protocolTypeTCP) {
+	} else if opt.Gate.Protocol.Has(options.ProtocolTypeTCP) {
 		err = this.Socket.Start(ln)
-	} else if Options.Gate.Protocol.Has(protocolTypeHTTP) {
+	} else if opt.Gate.Protocol.Has(options.ProtocolTypeHTTP) {
 		err = this.Server.Start(ln)
 	}
 
 	return err
 }
 
-func (this *module) Close() (err error) {
-	if Options.Gate.Protocol.Has(protocolTypeALL) {
+func (this *Module) Close() (err error) {
+	if opt.Gate.Protocol.Has(options.ProtocolTypeALL) {
 		_ = this.Socket.Close()
 		_ = this.Server.Close()
 		this.mux.Close()
-	} else if Options.Gate.Protocol.Has(protocolTypeTCP) {
+	} else if opt.Gate.Protocol.Has(options.ProtocolTypeTCP) {
 		err = this.Socket.Close()
-	} else if Options.Gate.Protocol.Has(protocolTypeHTTP) {
+	} else if opt.Gate.Protocol.Has(options.ProtocolTypeHTTP) {
 		err = this.Server.Close()
 	}
 	if err != nil {
@@ -115,7 +110,7 @@ func (this *module) Close() (err error) {
 	if err = xclient.Close(); err != nil {
 		return
 	}
-	if Options.Gate.Broadcast == 2 {
+	if opt.Gate.Broadcast == 2 {
 		err = xserver.Close()
 	}
 	return

@@ -3,6 +3,7 @@ package gate
 import (
 	"github.com/hwcer/cosnet"
 	"github.com/hwcer/cosrpc/xshare"
+	"github.com/hwcer/gate/options"
 	"github.com/hwcer/logger"
 	"github.com/hwcer/registry"
 )
@@ -15,7 +16,7 @@ func init() {
 }
 
 func Service() *registry.Service {
-	return rs.Service(Options.Gate.Name)
+	return rs.Service(options.Name)
 }
 
 // Register 注册协议，用于服务器推送消息
@@ -27,7 +28,7 @@ func Register(i any, prefix ...string) {
 }
 
 func send(c *xshare.Context) any {
-	uid := c.GetMetadata(Options.Metadata.UID)
+	uid := c.GetMetadata(opt.Metadata.UID)
 	//logger.Debug("推送消息:%v  %v  %v", c.GetMetadata(rpcx.MetadataMessagePath), uid, string(c.Payload()))
 	player := mod.Socket.Players.Get(uid)
 	//sock := Sockets.Socket(uid)
@@ -40,7 +41,7 @@ func send(c *xshare.Context) any {
 		logger.Debug("用户不在线,消息丢弃:%v", uid)
 		return nil
 	}
-	path := c.GetMetadata(Options.Gate.Name)
+	path := c.GetMetadata(opt.Metadata.API)
 	if err := sock.Send(path, c.Bytes()); err != nil {
 		logger.Debug("socket send error:%v", err)
 	}
@@ -48,9 +49,9 @@ func send(c *xshare.Context) any {
 }
 
 func broadcast(c *xshare.Context) any {
-	sid := c.GetMetadata(xshare.ServicesMetadataServerId)
+	sid := c.GetMetadata(xshare.ServicesMetadataRpcServerId)
 	//logger.Debug("推送消息:%v  %v  %v", c.GetMetadata(rpcx.MetadataMessagePath), uid, string(c.Payload()))
-	path := c.GetMetadata(Options.Gate.Name)
+	path := c.GetMetadata(opt.Metadata.API)
 
 	mod.Socket.Broadcast(path, c.Bytes(), func(s *cosnet.Socket) bool {
 		if p := s.Player(); p != nil && sid != "" && p.GetString("sid") == sid {

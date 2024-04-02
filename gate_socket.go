@@ -3,6 +3,7 @@ package gate
 import (
 	"errors"
 	"github.com/hwcer/cosnet"
+	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/logger"
 	"net"
 	"net/url"
@@ -34,7 +35,7 @@ func (this *socket) Start(ln net.Listener) error {
 	this.Server.On(cosnet.EventTypeVerified, this.Connected)
 	this.Server.On(cosnet.EventTypeDisconnect, this.Disconnect)
 	this.Server.On(cosnet.EventTypeDestroyed, this.Destroyed)
-	logger.Trace("网关长连接启动：%v", Options.Gate.Address)
+	logger.Trace("网关长连接启动：%v", opt.Gate.Address)
 	return nil
 }
 
@@ -68,9 +69,9 @@ func (this *socket) proxy(c *cosnet.Context) interface{} {
 			return c.Errorf(0, "not login")
 		}
 		if limit == ApiLevelLogin {
-			req[Options.Metadata.GUID] = p.UUID()
+			req[opt.Metadata.GUID] = p.UUID()
 		} else {
-			req[Options.Metadata.UID] = p.GetString(Options.Metadata.UID)
+			req[opt.Metadata.UID] = p.GetString(opt.Metadata.UID)
 		}
 
 	}
@@ -86,13 +87,13 @@ func (this *socket) proxy(c *cosnet.Context) interface{} {
 	return reply
 }
 
-func (this *socket) setCookie(c *cosnet.Context, cookie map[string]string) (err error) {
+func (this *socket) setCookie(c *cosnet.Context, cookie xshare.Metadata) (err error) {
 	if len(cookie) == 0 {
 		return
 	}
 	p := c.Player()
 	if p == nil {
-		if guid := cookie[Options.Metadata.GUID]; guid != "" {
+		if guid := cookie[opt.Metadata.GUID]; guid != "" {
 			if p, err = this.Server.Players.Verify(guid, c.Socket, nil); err != nil {
 				return err
 			}
@@ -101,7 +102,7 @@ func (this *socket) setCookie(c *cosnet.Context, cookie map[string]string) (err 
 		}
 	}
 	for key, val := range cookie {
-		if key != Options.Metadata.GUID {
+		if key != opt.Metadata.GUID {
 			p.Set(key, val)
 		}
 	}

@@ -2,6 +2,7 @@ package gate
 
 import (
 	"github.com/hwcer/cosgo/values"
+	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/cosweb"
 	"github.com/hwcer/cosweb/middleware"
 	"github.com/hwcer/cosweb/session"
@@ -38,7 +39,7 @@ func (this *server) Start(ln net.Listener) (err error) {
 	if err = this.Server.Listener(ln); err != nil {
 		return err
 	} else {
-		logger.Trace("网关短连接启动：%v", Options.Gate.Address)
+		logger.Trace("网关短连接启动：%v", opt.Gate.Address)
 	}
 	return
 }
@@ -83,9 +84,9 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 			return c.JSON(values.Parse(err))
 		}
 		if limit == ApiLevelLogin {
-			req[Options.Metadata.GUID] = c.Session.UUID()
+			req[opt.Metadata.GUID] = c.Session.UUID()
 		} else {
-			req[Options.Metadata.UID] = c.Session.GetString(Options.Metadata.UID)
+			req[opt.Metadata.UID] = c.Session.GetString(opt.Metadata.UID)
 		}
 	}
 
@@ -99,17 +100,17 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 	return c.Bytes(cosweb.ContentTypeApplicationJSON, reply)
 }
 
-func (this *server) setCookie(c *cosweb.Context, cookie map[string]string) (err error) {
+func (this *server) setCookie(c *cosweb.Context, cookie xshare.Metadata) (err error) {
 	if len(cookie) == 0 {
 		return
 	}
-	if guid := cookie[Options.Metadata.GUID]; guid != "" {
+	if guid := cookie[opt.Metadata.GUID]; guid != "" {
 		if err = this.Login(c, guid); err != nil {
 			return err
 		}
 	}
 	for key, val := range cookie {
-		if key != Options.Metadata.GUID {
+		if key != opt.Metadata.GUID {
 			c.Session.Set(key, val)
 		}
 	}
