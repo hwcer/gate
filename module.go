@@ -3,7 +3,6 @@ package gate
 import (
 	"errors"
 	"github.com/hwcer/cosgo"
-	"github.com/hwcer/cosnet/message"
 	"github.com/hwcer/cosrpc/xclient"
 	"github.com/hwcer/cosrpc/xserver"
 	"github.com/hwcer/coswss"
@@ -91,7 +90,7 @@ func (this *Module) Start() (err error) {
 	//SOCKET
 	if p.Has(options.ProtocolTypeTCP) {
 		if this.mux != nil {
-			so := this.mux.Match(message.Matcher())
+			so := this.mux.Match(this.Socket.Matcher())
 			err = this.Socket.Listen(so)
 		} else {
 			err = this.Socket.Start(opt.Gate.Address)

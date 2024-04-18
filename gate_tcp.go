@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/hwcer/cosgo/utils"
 	"github.com/hwcer/cosnet"
+	"github.com/hwcer/cosnet/tcp"
 	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/logger"
 	"net"
@@ -42,7 +43,7 @@ func (this *socket) Start(address string) error {
 	return err
 }
 func (this *socket) Listen(ln net.Listener) error {
-	this.Server.Accept(ln)
+	this.Server.Accept(&tcp.Listener{Listener: ln})
 	this.Server.On(cosnet.EventTypeError, this.Errorf)
 	this.Server.On(cosnet.EventTypeVerified, this.Connected)
 	this.Server.On(cosnet.EventTypeDisconnect, this.Disconnect)

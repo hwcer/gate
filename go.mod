@@ -2,6 +2,8 @@ module github.com/hwcer/gate
 
 go 1.21.5
 
+
+
 require (
 	github.com/hwcer/cosgo v1.0.4
 	github.com/hwcer/cosnet v0.0.6
