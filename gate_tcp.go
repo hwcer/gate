@@ -2,6 +2,7 @@ package gate
 
 import (
 	"errors"
+	"github.com/hwcer/cosgo/utils"
 	"github.com/hwcer/cosnet"
 	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/logger"
@@ -29,7 +30,18 @@ type socket struct {
 	*cosnet.Server
 }
 
-func (this *socket) Start(ln net.Listener) error {
+func (this *socket) Start(address string) error {
+	addr := utils.NewAddress(address)
+	if addr.Scheme == "" {
+		addr.Scheme = "tcp"
+	}
+	ln, err := net.Listen(addr.Scheme, addr.String())
+	if err == nil {
+		err = this.Listen(ln)
+	}
+	return err
+}
+func (this *socket) Listen(ln net.Listener) error {
 	this.Server.Accept(ln)
 	this.Server.On(cosnet.EventTypeError, this.Errorf)
 	this.Server.On(cosnet.EventTypeVerified, this.Connected)

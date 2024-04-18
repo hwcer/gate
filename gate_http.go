@@ -25,7 +25,7 @@ type server struct {
 	*cosweb.Server
 }
 
-func (this *server) Start(ln net.Listener) (err error) {
+func (this *server) Listen(ln net.Listener) (err error) {
 	if err = session.Start(nil); err != nil {
 		return err
 	}

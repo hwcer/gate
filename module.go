@@ -6,6 +6,7 @@ import (
 	"github.com/hwcer/cosnet/message"
 	"github.com/hwcer/cosrpc/xclient"
 	"github.com/hwcer/cosrpc/xserver"
+	"github.com/hwcer/coswss"
 	"github.com/hwcer/gate/options"
 	"github.com/hwcer/scc"
 	"github.com/soheilhy/cmux"
@@ -23,9 +24,10 @@ func New() cosgo.IModule {
 
 type Module struct {
 	cosgo.Module
-	mux    cmux.CMux
-	Server *server
-	Socket *socket
+	mux       cmux.CMux
+	Server    *server
+	Socket    *socket
+	WebSocket *coswss.Server
 }
 
 func (this *Module) Init() (err error) {
@@ -63,39 +65,65 @@ func (this *Module) Init() (err error) {
 
 	return nil
 }
-func (this *Module) Start() error {
-	ln, err := net.Listen("tcp", opt.Gate.Address)
-	if err != nil {
-		return err
-	}
-	if opt.Gate.Protocol.Has(options.ProtocolTypeALL) {
-		this.mux = cmux.New(ln)
-		sv := this.mux.Match(cmux.HTTP1Fast())
-		if err = this.Server.Start(sv); err != nil {
-			return err
-		}
-		so := this.mux.Match(message.Matcher())
-		if err = this.Socket.Start(so); err != nil {
-			return err
-		}
 
-		err = scc.Timeout(time.Second, func() error {
-			return this.mux.Serve()
-		})
-		if errors.Is(err, scc.ErrorTimeout) {
+func (this *Module) Start() (err error) {
+	if opt.Gate.Protocol.CMux() {
+		var ln net.Listener
+		if ln, err = net.Listen("tcp", opt.Gate.Address); err != nil {
+			return err
+		}
+		this.mux = cmux.New(ln)
+	}
+	p := opt.Gate.Protocol
+	// websocket
+	if p.Has(options.ProtocolTypeWSS) {
+		if p.Has(options.ProtocolTypeTCP) {
+			this.WebSocket, err = coswss.New(this.Socket.Server)
+		} else {
+			this.WebSocket, err = coswss.New(nil)
+		}
+		if p.Has(options.ProtocolTypeHTTP) {
+			this.WebSocket.Binding(this.Server.Server, options.Options.Gate.Websocket)
+		} else {
+			err = this.WebSocket.Start(opt.Gate.Address)
+		}
+	}
+	//SOCKET
+	if p.Has(options.ProtocolTypeTCP) {
+		if this.mux != nil {
+			so := this.mux.Match(message.Matcher())
+			err = this.Socket.Listen(so)
+		} else {
+			err = this.Socket.Start(opt.Gate.Address)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	if p.Has(options.ProtocolTypeHTTP) {
+		if this.mux != nil {
+			so := this.mux.Match(cmux.HTTP1Fast())
+			err = this.Server.Listen(so)
+		} else {
+			err = this.Server.Start(opt.Gate.Address)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	if this.mux != nil {
+		if err = scc.Timeout(time.Second, func() error { return this.mux.Serve() }); errors.Is(err, scc.ErrorTimeout) {
 			err = nil
 		}
-	} else if opt.Gate.Protocol.Has(options.ProtocolTypeTCP) {
-		err = this.Socket.Start(ln)
-	} else if opt.Gate.Protocol.Has(options.ProtocolTypeHTTP) {
-		err = this.Server.Start(ln)
 	}
 
 	return err
 }
 
 func (this *Module) Close() (err error) {
-	if opt.Gate.Protocol.Has(options.ProtocolTypeALL) {
+	if this.mux != nil {
 		_ = this.Socket.Close()
 		_ = this.Server.Close()
 		this.mux.Close()
