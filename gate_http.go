@@ -18,6 +18,7 @@ var Method = []string{"POST", "GET", "OPTIONS"}
 
 func init() {
 	mod.Server = &server{}
+	mod.Server.Server = cosweb.New(nil)
 	session.Options.Name = "_cookie_vars"
 }
 
@@ -29,7 +30,6 @@ func (this *server) Listen(ln net.Listener) (err error) {
 	if err = session.Start(nil); err != nil {
 		return err
 	}
-	this.Server = cosweb.New(nil)
 	//跨域
 	access := middleware.NewAccessControlAllow()
 	access.Origin("*")
