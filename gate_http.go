@@ -26,8 +26,8 @@ type server struct {
 	*cosweb.Server
 }
 
-func (this *server) Listen(ln net.Listener) (err error) {
-	if err = session.Start(nil); err != nil {
+func (this *server) init() error {
+	if err := session.Start(nil); err != nil {
 		return err
 	}
 	//跨域
@@ -36,9 +36,23 @@ func (this *server) Listen(ln net.Listener) (err error) {
 	access.Methods(Method...)
 	this.Server.Use(access.Handle)
 	this.Server.Register("/*", this.proxy, Method...)
-	if err = this.Server.Listener(ln); err != nil {
-		return err
-	} else {
+	return nil
+}
+
+func (this *server) Start(address string) (err error) {
+	if err = this.init(); err != nil {
+		return
+	}
+	if err = this.Server.Start(address); err == nil {
+		logger.Trace("网关短连接启动：%v", opt.Gate.Address)
+	}
+	return
+}
+func (this *server) Listen(ln net.Listener) (err error) {
+	if err = this.init(); err != nil {
+		return
+	}
+	if err = this.Server.Listen(ln); err == nil {
 		logger.Trace("网关短连接启动：%v", opt.Gate.Address)
 	}
 	return
