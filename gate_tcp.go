@@ -24,6 +24,12 @@ func init() {
 	_ = service.Register(srv.ping, "ping")
 	//_ = Sockets.Register(Socket.login)
 	_ = service.Register(srv.proxy, "/*")
+
+	srv.Server.On(cosnet.EventTypeError, srv.Errorf)
+	srv.Server.On(cosnet.EventTypeVerified, srv.Connected)
+	srv.Server.On(cosnet.EventTypeDisconnect, srv.Disconnect)
+	srv.Server.On(cosnet.EventTypeDestroyed, srv.Destroyed)
+
 	mod.Socket = srv
 }
 
@@ -44,16 +50,12 @@ func (this *socket) Start(address string) error {
 }
 func (this *socket) Listen(ln net.Listener) error {
 	this.Server.Accept(&tcp.Listener{Listener: ln})
-	this.Server.On(cosnet.EventTypeError, this.Errorf)
-	this.Server.On(cosnet.EventTypeVerified, this.Connected)
-	this.Server.On(cosnet.EventTypeDisconnect, this.Disconnect)
-	this.Server.On(cosnet.EventTypeDestroyed, this.Destroyed)
 	logger.Trace("网关长连接启动：%v", opt.Gate.Address)
 	return nil
 }
 
 func (this *socket) Errorf(socket *cosnet.Socket, err interface{}) bool {
-	logger.Debug(err)
+	logger.Alert(err)
 	return false
 }
 

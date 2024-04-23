@@ -76,16 +76,8 @@ func (this *Module) Start() (err error) {
 	p := opt.Gate.Protocol
 	// websocket
 	if p.Has(options.ProtocolTypeWSS) {
-		if p.Has(options.ProtocolTypeTCP) {
-			this.WebSocket, err = coswss.New(this.Socket.Server)
-		} else {
-			this.WebSocket, err = coswss.New(nil)
-		}
-		if p.Has(options.ProtocolTypeHTTP) {
-			this.WebSocket.Binding(this.Server.Server, options.Options.Gate.Websocket)
-		} else {
-			err = this.WebSocket.Start(opt.Gate.Address)
-		}
+		this.WebSocket, err = coswss.New(this.Socket.Server)
+		this.WebSocket.Binding(this.Server.Server, options.Options.Gate.Websocket)
 	}
 	//SOCKET
 	if p.Has(options.ProtocolTypeTCP) {
@@ -100,7 +92,7 @@ func (this *Module) Start() (err error) {
 		}
 	}
 
-	if p.Has(options.ProtocolTypeHTTP) {
+	if p.Has(options.ProtocolTypeHTTP) || p.Has(options.ProtocolTypeWSS) {
 		if this.mux != nil {
 			so := this.mux.Match(cmux.HTTP1Fast())
 			err = this.Server.Listen(so)

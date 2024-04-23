@@ -45,7 +45,7 @@ var Options = &struct {
 	Metadata *Metadata         `json:"metadata"`
 }{
 	Rpcx:     xshare.Options,
-	Gate:     &Gate{Address: "0.0.0.0:80", Protocol: 3, Broadcast: 1, Websocket: "ws"},
+	Gate:     &Gate{Address: "0.0.0.0:80", Protocol: 2, Broadcast: 1, Websocket: "ws"},
 	Service:  xshare.Service,
 	Metadata: &Metadata{API: "api", UID: "uid", GUID: "guid"},
 }

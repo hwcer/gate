@@ -3,7 +3,7 @@ appid="yyds"
 #redis="172.23.233.25:6379?db=0"
 [gate]
 address=":8000"
-protocol=3    #1-短链接，2-长连接，3-长短链接全开
+protocol=2    #1-websocket，2-长连接，4-短链接
 
 #网关转发规则
 #process : 进程内调用
