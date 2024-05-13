@@ -4,6 +4,7 @@ import (
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosrpc/xclient"
 	"github.com/hwcer/cosrpc/xshare"
+	"github.com/hwcer/gate/options"
 	"net/url"
 	"strings"
 )
@@ -23,8 +24,12 @@ func metadata(raw string) (req, res xshare.Metadata, err error) {
 	return
 }
 
+type player interface {
+	GetString(string) string
+}
+
 // request rpc转发,返回实际转发的servicePath
-func request(path string, args []byte, req, res xshare.Metadata, reply any) (err error) {
+func request(p player, path string, args []byte, req, res xshare.Metadata, reply any) (err error) {
 	if strings.HasPrefix(path, "/") {
 		path = strings.TrimPrefix(path, "/")
 	}
@@ -35,6 +40,11 @@ func request(path string, args []byte, req, res xshare.Metadata, reply any) (err
 	servicePath := path[0:index]
 	service := Service()
 	serviceMethod := service.Formatter(path[index:])
+	if p != nil {
+		if serviceAddress := p.GetString(options.GetServiceAddress(servicePath)); serviceAddress != "" {
+			req.SetAddress(serviceAddress)
+		}
+	}
 	err = xclient.CallWithMetadata(req, res, servicePath, serviceMethod, args, reply)
 	return
 }

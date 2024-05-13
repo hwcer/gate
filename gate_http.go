@@ -1,6 +1,7 @@
 package gate
 
 import (
+	"encoding/json"
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/cosweb"
@@ -9,6 +10,7 @@ import (
 	"github.com/hwcer/logger"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -34,6 +36,8 @@ func (this *server) init() error {
 	access := middleware.NewAccessControlAllow()
 	access.Origin("*")
 	access.Methods(Method...)
+	headers := []string{session.Options.Name, "Content-Type", "Set-Cookie", "*"}
+	access.Headers(strings.Join(headers, ","))
 	this.Server.Use(access.Handle)
 	this.Server.Register("/*", this.proxy, Method...)
 	return nil
@@ -59,13 +63,14 @@ func (this *server) Listen(ln net.Listener) (err error) {
 }
 
 // Login 登录
-func (this *server) Login(c *cosweb.Context, guid string) (err error) {
+func (this *server) Login(c *cosweb.Context, guid string) (cookie *http.Cookie, err error) {
 	value := values.Values{}
 	value["time"] = time.Now().Unix()
-	cookie := &http.Cookie{Name: session.Options.Name, Path: "/"}
+	cookie = &http.Cookie{Name: session.Options.Name, Path: "/"}
 	if cookie.Value, err = c.Session.Create(guid, value); err == nil {
 		c.Cookie.SetCookie(cookie)
 	}
+	//c.Header().Set(cookie.Name, cookie.Value)
 	return
 }
 
@@ -88,15 +93,17 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 		return c.JSON(values.Parse(err))
 	}
 
+	var p player
 	limit := limits(c.Request.URL.Path)
 	if limit != ApiLevelNone {
-		token := c.GetString(session.Options.Name)
+		token := c.GetString(session.Options.Name, cosweb.RequestDataTypeCookie, cosweb.RequestDataTypeQuery, cosweb.RequestDataTypeHeader)
 		if token == "" {
 			return c.JSON(values.Error("token empty"))
 		}
 		if err = c.Session.Start(token, session.StartTypeAuth); err != nil {
 			return c.JSON(values.Parse(err))
 		}
+		p = c.Session
 		if limit == ApiLevelLogin {
 			req[opt.Metadata.GUID] = c.Session.UUID()
 		} else {
@@ -105,22 +112,32 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 	}
 
 	reply := make([]byte, 0)
-	if err = request(c.Request.URL.Path, c.Body.Bytes(), req, res, &reply); err != nil {
+	if err = request(p, c.Request.URL.Path, c.Body.Bytes(), req, res, &reply); err != nil {
 		return c.JSON(values.Parse(err))
 	}
-	if err = this.setCookie(c, res); err != nil {
+	var cookie *http.Cookie
+	if cookie, err = this.setCookie(c, res); err != nil {
 		return c.JSON(values.Parse(err))
 	}
-	return c.Bytes(cosweb.ContentTypeApplicationJSON, reply)
+	if cookie != nil {
+		r := map[string]any{}
+		if err = json.Unmarshal(reply, &r); err != nil {
+			return c.JSON(values.Parse(err))
+		}
+		r["cookie"] = map[string]string{"Name": cookie.Name, "Value": cookie.Value}
+		return c.JSON(r)
+	} else {
+		return c.Bytes(cosweb.ContentTypeApplicationJSON, reply)
+	}
 }
 
-func (this *server) setCookie(c *cosweb.Context, cookie xshare.Metadata) (err error) {
+func (this *server) setCookie(c *cosweb.Context, cookie xshare.Metadata) (r *http.Cookie, err error) {
 	if len(cookie) == 0 {
 		return
 	}
 	if guid := cookie[opt.Metadata.GUID]; guid != "" {
-		if err = this.Login(c, guid); err != nil {
-			return err
+		if r, err = this.Login(c, guid); err != nil {
+			return
 		}
 	}
 	for key, val := range cookie {

@@ -1,6 +1,8 @@
 package options
 
-import "github.com/hwcer/cosrpc/xshare"
+import (
+	"github.com/hwcer/cosrpc/xshare"
+)
 
 type protocol int8
 
@@ -11,6 +13,7 @@ const (
 )
 
 const Name = "gate"
+const ServiceAddressPrefix = "_service_address_"
 
 func (p protocol) Has(t int8) bool {
 	v := int8(p)
@@ -48,4 +51,8 @@ var Options = &struct {
 	Gate:     &Gate{Address: "0.0.0.0:80", Protocol: 2, Broadcast: 1, Websocket: "ws"},
 	Service:  xshare.Service,
 	Metadata: &Metadata{API: "api", UID: "uid", GUID: "guid"},
+}
+
+func GetServiceAddress(k string) string {
+	return ServiceAddressPrefix + k
 }
