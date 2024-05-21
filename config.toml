@@ -4,7 +4,8 @@ appid="yyds"
 [gate]
 address=":8000"
 protocol=2    #1-websocket，2-长连接，4-短链接
-
+[route]
+prefix="handle"      #路由前缀
 #网关转发规则
 #process : 进程内调用
 #discovery ：服务器发现,必须配置rpcx.redis

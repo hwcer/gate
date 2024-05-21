@@ -34,6 +34,11 @@ type Gate struct {
 	Broadcast int8     `json:"broadcast"` //Push message 0-关闭，1-双向通信，2-独立启动服务器,推送消息必须启用长链接
 	Websocket string   `json:"websocket"` //开启websocket时,路由前缀
 }
+
+type Route struct {
+	Prefix string `json:"prefix"` //路由强制前缀
+}
+
 type Metadata struct {
 	API  string `json:"api"`  //socket 推送消息时的路径(协议)
 	UID  string `json:"uid"`  //角色ID
@@ -41,14 +46,16 @@ type Metadata struct {
 }
 
 var Options = &struct {
-	Appid    string            `json:"appid"` //项目标识
-	Rpcx     *xshare.Rpcx      `json:"rpcx"`
-	Gate     *Gate             `json:"gate"`
+	Appid    string       `json:"appid"` //项目标识
+	Rpcx     *xshare.Rpcx `json:"rpcx"`
+	Gate     *Gate        `json:"gate"`
+	Route    *Route
 	Service  map[string]string `json:"service"`
 	Metadata *Metadata         `json:"metadata"`
 }{
 	Rpcx:     xshare.Options,
 	Gate:     &Gate{Address: "0.0.0.0:80", Protocol: 2, Broadcast: 1, Websocket: "ws"},
+	Route:    &Route{Prefix: "handle"},
 	Service:  xshare.Service,
 	Metadata: &Metadata{API: "api", UID: "uid", GUID: "guid"},
 }

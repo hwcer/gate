@@ -5,6 +5,7 @@ import (
 	"github.com/hwcer/cosrpc/xclient"
 	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/gate/options"
+	"github.com/hwcer/registry"
 	"net/url"
 	"strings"
 )
@@ -40,6 +41,9 @@ func request(p player, path string, args []byte, req, res xshare.Metadata, reply
 	servicePath := path[0:index]
 	service := Service()
 	serviceMethod := service.Formatter(path[index:])
+	if options.Options.Route.Prefix != "" {
+		serviceMethod = registry.Join(options.Options.Route.Prefix, serviceMethod)
+	}
 	if p != nil {
 		if serviceAddress := p.GetString(options.GetServiceAddress(servicePath)); serviceAddress != "" {
 			req.SetAddress(serviceAddress)
