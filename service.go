@@ -28,17 +28,17 @@ func Register(i any, prefix ...string) {
 }
 
 func send(c *xshare.Context) any {
-	uid := c.GetMetadata(opt.Metadata.UID)
+	guid := c.GetMetadata(opt.Metadata.GUID)
 	//logger.Debug("推送消息:%v  %v  %v", c.GetMetadata(rpcx.MetadataMessagePath), uid, string(c.Payload()))
-	player := mod.Socket.Players.Get(uid)
+	p := mod.Socket.Players.Get(guid)
 	//sock := Sockets.Socket(uid)
-	if player == nil {
-		logger.Debug("用户不在线,消息丢弃:%v", uid)
+	if p == nil {
+		logger.Debug("用户不在线,消息丢弃:%v", guid)
 		return nil
 	}
-	sock := player.Socket()
+	sock := p.Socket()
 	if sock == nil {
-		logger.Debug("用户不在线,消息丢弃:%v", uid)
+		logger.Debug("用户不在线,消息丢弃:%v", guid)
 		return nil
 	}
 	path := c.GetMetadata(opt.Metadata.API)
