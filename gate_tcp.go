@@ -24,8 +24,8 @@ func init() {
 	_ = service.Register(srv.proxy, "/*")
 
 	srv.Server.On(cosnet.EventTypeError, srv.Errorf)
-	srv.Server.On(cosnet.EventTypeVerified, srv.Connected)
-	srv.Server.On(cosnet.EventTypeDisconnect, srv.Disconnect)
+	//srv.Server.On(cosnet.EventTypeVerified, srv.Connected)
+	//srv.Server.On(cosnet.EventTypeDisconnect, srv.Disconnect)
 	srv.Server.On(cosnet.EventTypeDestroyed, srv.Destroyed)
 
 	mod.Socket = srv

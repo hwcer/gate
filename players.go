@@ -83,7 +83,8 @@ func (this *players) Binding(uuid string, socket *cosnet.Socket) (r *Player, err
 		socket.Emit(cosnet.EventTypeReconnected)
 	} else {
 		r.Values = socket.Values()
+		socket.Emit(cosnet.EventTypeConnected)
 	}
-	socket.Emit(cosnet.EventTypeVerified)
+
 	return
 }
