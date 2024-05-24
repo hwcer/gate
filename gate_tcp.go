@@ -3,6 +3,7 @@ package gate
 import (
 	"errors"
 	"github.com/hwcer/cosgo/utils"
+	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosnet"
 	"github.com/hwcer/cosnet/tcp"
 	"github.com/hwcer/cosrpc/xshare"
@@ -12,9 +13,6 @@ import (
 	"strconv"
 	"time"
 )
-
-//var Socket = &socket{}
-//var Sockets = cosnet.New()
 
 func init() {
 	srv := &socket{}
@@ -76,18 +74,17 @@ func (this *socket) proxy(c *cosnet.Context) interface{} {
 	if err != nil {
 		return c.Errorf(0, err)
 	}
-	p := c.Player()
+	p := c.Values()
 	limit := limits(path.Path)
 	if limit != ApiLevelNone {
 		if p == nil {
 			return c.Errorf(0, "not login")
 		}
 		if limit == ApiLevelLogin {
-			req[opt.Metadata.GUID] = p.UUID()
+			req[opt.Metadata.GUID] = p.GetString(opt.Metadata.GUID)
 		} else {
 			req[opt.Metadata.UID] = p.GetString(opt.Metadata.UID)
 		}
-
 	}
 
 	reply := make([]byte, 0)
@@ -111,53 +108,50 @@ func (this *socket) setCookie(c *cosnet.Context, cookie xshare.Metadata) (err er
 	if len(cookie) == 0 {
 		return
 	}
-	p := c.Player()
-	if p == nil {
+	var v values.Values
+	//账号登录
+	if i := c.Socket.Get(); i == nil {
 		if guid := cookie[opt.Metadata.GUID]; guid != "" {
-			if p, err = this.Server.Players.Verify(guid, c.Socket, nil); err != nil {
-				return err
-			}
+			v = values.Values{}
+			c.Socket.Set(v)
 		} else {
 			return errors.New("not login")
 		}
+	} else {
+		v = i.(values.Values)
 	}
-	for key, val := range cookie {
-		if key != opt.Metadata.GUID {
-			p.Set(key, val)
+	//角色绑定
+	if uid := cookie[opt.Metadata.UID]; uid != "" {
+		if _, err = Players.Binding(uid, c.Socket); err != nil {
+			return
 		}
+	}
+	//同步数据
+	for key, val := range cookie {
+		v.Set(key, val)
 	}
 	return
 }
 
 func (this *socket) Connected(sock *cosnet.Socket, _ interface{}) bool {
 	logger.Debug("Connected:%v", sock.Id())
-	if uid, err := this.GetUid(sock); err == nil && uid != "" {
-		//_ = share.Notify.Publish(share.NotifyChannelSocketConnected, uid)
-	}
 	return true
 }
 
 func (this *socket) Disconnect(sock *cosnet.Socket, _ interface{}) bool {
 	logger.Debug("Disconnect:%v", sock.Id())
-	if uid, err := this.GetUid(sock); err == nil && uid != "" {
-		//_ = share.Notify.Publish(share.NotifyChannelSocketDisconnect, uid)
-	}
 	return true
 }
 
 func (this *socket) Destroyed(sock *cosnet.Socket, _ interface{}) bool {
 	logger.Debug("Destroyed:%v", sock.Id())
-	if uid, err := this.GetUid(sock); err == nil && uid != "" {
+	vs := sock.Values()
+	if vs == nil {
+		return true
+	}
+	if uid := vs.GetString(opt.Metadata.UID); uid != "" {
+		Players.Delete(uid)
 		//_ = share.Notify.Publish(share.NotifyChannelSocketDestroyed, uid)
 	}
 	return true
-}
-
-func (this *socket) GetUid(sock *cosnet.Socket) (uid string, err error) {
-	if player := sock.Player(); player != nil {
-		uid = player.UUID()
-	} else {
-		err = errors.New("not login")
-	}
-	return
 }

@@ -28,17 +28,17 @@ func Register(i any, prefix ...string) {
 }
 
 func send(c *xshare.Context) any {
-	guid := c.GetMetadata(opt.Metadata.GUID)
+	uid := c.GetMetadata(opt.Metadata.UID)
 	//logger.Debug("推送消息:%v  %v  %v", c.GetMetadata(rpcx.MetadataMessagePath), uid, string(c.Payload()))
-	p := mod.Socket.Players.Get(guid)
+	p := Players.Get(uid)
 	//sock := Sockets.Socket(uid)
 	if p == nil {
-		logger.Debug("用户不在线,消息丢弃:%v", guid)
+		logger.Debug("用户不在线,消息丢弃:%v", uid)
 		return nil
 	}
 	sock := p.Socket()
 	if sock == nil {
-		logger.Debug("用户不在线,消息丢弃:%v", guid)
+		logger.Debug("用户不在线,消息丢弃:%v", uid)
 		return nil
 	}
 	path := c.GetMetadata(opt.Metadata.API)
@@ -54,7 +54,7 @@ func broadcast(c *xshare.Context) any {
 	path := c.GetMetadata(opt.Metadata.API)
 
 	mod.Socket.Broadcast(path, c.Bytes(), func(s *cosnet.Socket) bool {
-		if p := s.Player(); p != nil && sid != "" && p.GetString("sid") == sid {
+		if p := s.Values(); p != nil && sid != "" && p.GetString("sid") == sid {
 			return true
 		} else {
 			return false
