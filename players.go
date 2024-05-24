@@ -31,6 +31,11 @@ func (this *Player) replace(socket *cosnet.Socket) {
 		old.Emit(cosnet.EventTypeReplaced)
 		old.Close()
 	}
+	//合并数据
+	for k, v := range socket.Values() {
+		this.Values.Set(k, v)
+	}
+	socket.Set(this.Values)
 	return
 }
 
@@ -76,8 +81,9 @@ func (this *players) Binding(uuid string, socket *cosnet.Socket) (r *Player, err
 		defer r.mutex.Unlock()
 		r.replace(socket)
 		socket.Emit(cosnet.EventTypeReconnected)
+	} else {
+		r.Values = socket.Values()
 	}
-	socket.Set(r)
 	socket.Emit(cosnet.EventTypeVerified)
 	return
 }
