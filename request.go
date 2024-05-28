@@ -39,8 +39,7 @@ func request(p player, path string, args []byte, req, res xshare.Metadata, reply
 		return values.Errorf(404, "page not found")
 	}
 	servicePath := path[0:index]
-	service := Service()
-	serviceMethod := service.Formatter(path[index:])
+	serviceMethod := registry.Formatter(path[index:])
 	if options.Options.Route.Prefix != "" {
 		serviceMethod = registry.Join(options.Options.Route.Prefix, serviceMethod)
 	}
