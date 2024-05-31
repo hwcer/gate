@@ -35,6 +35,13 @@ type socket struct {
 	*cosnet.Server
 }
 
+//var socketSerialize cosnet.HandlerSerialize = func(c *cosnet.Context, reply interface{}) (any, error) {
+//	if v, ok := reply.([]byte); ok && string(v) == "null" {
+//		return nil, nil
+//	}
+//	return reply, nil
+//}
+
 func (this *socket) Start(address string) error {
 	addr := utils.NewAddress(address)
 	if addr.Scheme == "" {
@@ -100,6 +107,9 @@ func (this *socket) proxy(c *cosnet.Context) interface{} {
 	//logger.Trace("socket response,PATH:%v   BODY:%v", path, string(reply))
 	if err = this.setCookie(c, res); err != nil {
 		return err
+	}
+	if len(reply) == 5 && string(reply[0:4]) == "null" {
+		return nil
 	}
 	return reply
 }
