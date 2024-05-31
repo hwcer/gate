@@ -108,7 +108,7 @@ func (this *socket) proxy(c *cosnet.Context) interface{} {
 	if err = this.setCookie(c, res); err != nil {
 		return err
 	}
-	if len(reply) == 5 && string(reply[0:4]) == "null" {
+	if len(reply) == 0 {
 		return nil
 	}
 	return reply
