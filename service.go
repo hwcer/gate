@@ -6,6 +6,7 @@ import (
 	"github.com/hwcer/gate/options"
 	"github.com/hwcer/logger"
 	"github.com/hwcer/registry"
+	"strings"
 )
 
 var rs = registry.New(nil)
@@ -41,6 +42,13 @@ func send(c *xshare.Context) any {
 		logger.Debug("用户不在线,消息丢弃:%v", uid)
 		return nil
 	}
+	//注册消息
+	for k, v := range c.Metadata() {
+		if strings.HasPrefix(k, options.ServiceAddressPrefix) {
+			p.Set(k, v)
+		}
+	}
+
 	path := c.GetMetadata(opt.Metadata.API)
 	if err := sock.Send(path, c.Bytes()); err != nil {
 		logger.Debug("socket send error:%v", err)
