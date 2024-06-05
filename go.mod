@@ -5,8 +5,8 @@ go 1.22
 toolchain go1.22.2
 
 require (
-	github.com/hwcer/cosgo v1.0.5
-	github.com/hwcer/cosnet v0.2.0
+	github.com/hwcer/cosgo v1.0.6
+	github.com/hwcer/cosnet v0.2.1
 	github.com/hwcer/cosrpc v0.0.6
 	github.com/hwcer/cosweb v0.0.9
 	github.com/hwcer/coswss v0.0.1
@@ -48,7 +48,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/hwcer/schema v0.0.3 // indirect
+	github.com/hwcer/schema v0.0.4 // indirect
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/juju/ratelimit v1.0.2 // indirect
