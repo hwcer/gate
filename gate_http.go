@@ -63,7 +63,7 @@ func (this *server) Listen(ln net.Listener) (err error) {
 }
 
 // Login 登录
-func (this *server) Login(c *cosweb.Context, guid string) (cookie *http.Cookie, err error) {
+func (this *server) login(c *cosweb.Context, guid string) (cookie *http.Cookie, err error) {
 	value := values.Values{}
 	value["time"] = time.Now().Unix()
 	cookie = &http.Cookie{Name: session.Options.Name, Path: "/"}
@@ -136,7 +136,7 @@ func (this *server) setCookie(c *cosweb.Context, cookie xshare.Metadata) (r *htt
 		return
 	}
 	if guid := cookie[opt.Metadata.GUID]; guid != "" {
-		if r, err = this.Login(c, guid); err != nil {
+		if r, err = this.login(c, guid); err != nil {
 			return
 		}
 	}
