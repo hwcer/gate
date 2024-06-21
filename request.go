@@ -26,7 +26,7 @@ func metadata(raw string) (req, res xshare.Metadata, err error) {
 }
 
 type player interface {
-	GetString(string) string
+	GetString(any) string
 }
 
 // request rpc转发,返回实际转发的servicePath
