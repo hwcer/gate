@@ -24,8 +24,8 @@ func init() {
 	_ = service.Register(srv.proxy, "/*")
 
 	srv.Server.On(cosnet.EventTypeError, srv.Errorf)
-	//srv.Server.On(cosnet.EventTypeVerified, srv.Connected)
-	//srv.Server.On(cosnet.EventTypeDisconnect, srv.Disconnect)
+	srv.Server.On(cosnet.EventTypeConnected, srv.Connected)
+	srv.Server.On(cosnet.EventTypeDisconnect, srv.Disconnect)
 	srv.Server.On(cosnet.EventTypeDestroyed, srv.Destroyed)
 
 	mod.Socket = srv
@@ -159,7 +159,16 @@ func (this *socket) Destroyed(sock *cosnet.Socket, _ interface{}) bool {
 	if vs == nil {
 		return true
 	}
-	if uid := vs.GetString(opt.Metadata.UID); uid != "" {
+	uid := vs.GetString(opt.Metadata.UID)
+	if uid == "" {
+		return true
+
+	}
+	p := Players.Get(uid)
+	if p == nil {
+		return true
+	}
+	if p.socket != nil && p.socket.Id() == sock.Id() {
 		Players.Delete(uid)
 		//_ = share.Notify.Publish(share.NotifyChannelSocketDestroyed, uid)
 	}
