@@ -27,6 +27,9 @@ type players struct {
 func (this *Player) replace(socket *cosnet.Socket) {
 	var old *cosnet.Socket
 	old, this.socket = this.socket, socket
+	if old != nil && old.Id() == socket.Id() {
+		return
+	}
 	if old != nil && !old.Status.Disabled() {
 		old.Emit(cosnet.EventTypeReplaced)
 		old.Close()

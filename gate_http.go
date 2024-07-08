@@ -1,7 +1,6 @@
 package gate
 
 import (
-	"encoding/json"
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/cosweb"
@@ -67,6 +66,7 @@ func (this *server) login(c *cosweb.Context, guid string) (cookie *http.Cookie, 
 	value := values.Values{}
 	value["time"] = time.Now().Unix()
 	cookie = &http.Cookie{Name: session.Options.Name, Path: "/"}
+
 	if cookie.Value, err = c.Session.Create(guid, value); err == nil {
 		c.Cookie.SetCookie(cookie)
 	}
@@ -115,20 +115,21 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 	if err = request(p, c.Request.URL.Path, c.Body.Bytes(), req, res, &reply); err != nil {
 		return c.JSON(values.Parse(err))
 	}
-	var cookie *http.Cookie
-	if cookie, err = this.setCookie(c, res); err != nil {
+	//var cookie *http.Cookie
+	if _, err = this.setCookie(c, res); err != nil {
 		return c.JSON(values.Parse(err))
 	}
-	if cookie != nil {
-		r := map[string]any{}
-		if err = json.Unmarshal(reply, &r); err != nil {
-			return c.JSON(values.Parse(err))
-		}
-		r["cookie"] = map[string]string{"Name": cookie.Name, "Value": cookie.Value}
-		return c.JSON(r)
-	} else {
-		return c.Bytes(cosweb.ContentTypeApplicationJSON, reply)
-	}
+	return c.Bytes(cosweb.ContentTypeApplicationJSON, reply)
+	//if cookie != nil {
+	//	r := map[string]any{}
+	//	if err = json.Unmarshal(reply, &r); err != nil {
+	//		return c.JSON(values.Parse(err))
+	//	}
+	//	r["cookie"] = map[string]string{"Name": cookie.Name, "Value": cookie.Value}
+	//	return c.JSON(r)
+	//} else {
+	//	return c.Bytes(cosweb.ContentTypeApplicationJSON, reply)
+	//}
 }
 
 func (this *server) setCookie(c *cosweb.Context, cookie xshare.Metadata) (r *http.Cookie, err error) {

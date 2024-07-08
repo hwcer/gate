@@ -8,7 +8,7 @@ require (
 	github.com/hwcer/cosgo v1.0.7
 	github.com/hwcer/cosnet v0.2.1
 	github.com/hwcer/cosrpc v0.0.6
-	github.com/hwcer/cosweb v0.0.9
+	github.com/hwcer/cosweb v0.1.0
 	github.com/hwcer/coswss v0.0.1
 	github.com/hwcer/logger v0.0.5
 	github.com/hwcer/registry v0.0.6
