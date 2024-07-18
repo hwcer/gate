@@ -33,3 +33,8 @@ func limits(s string) ApiLevel {
 		return ApiLevelSelect
 	}
 }
+
+// Formatter 格式化路径
+var Formatter = func(s string) string {
+	return s
+}

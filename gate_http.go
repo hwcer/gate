@@ -94,7 +94,8 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 	}
 
 	var p player
-	limit := limits(c.Request.URL.Path)
+	path := Formatter(c.Request.URL.Path)
+	limit := limits(path)
 	if limit != ApiLevelNone {
 		token := c.GetString(session.Options.Name, cosweb.RequestDataTypeCookie, cosweb.RequestDataTypeQuery, cosweb.RequestDataTypeHeader)
 		if token == "" {
@@ -112,7 +113,7 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 	}
 
 	reply := make([]byte, 0)
-	if err = request(p, c.Request.URL.Path, c.Body.Bytes(), req, res, &reply); err != nil {
+	if err = request(p, path, c.Body.Bytes(), req, res, &reply); err != nil {
 		return c.JSON(values.Parse(err))
 	}
 	//var cookie *http.Cookie

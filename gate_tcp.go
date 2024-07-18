@@ -71,18 +71,19 @@ func (this *socket) ping(c *cosnet.Context) interface{} {
 }
 
 func (this *socket) proxy(c *cosnet.Context) interface{} {
-	path, err := url.Parse(c.Path())
+	urlPath, err := url.Parse(c.Path())
 	if err != nil {
 		return c.Errorf(0, err)
 	}
 
-	//logger.Trace("socket request,PATH:%v   BODY:%v", path, string(c.Message.Body()))
-	req, res, err := metadata(path.Path)
+	//logger.Trace("socket request,PATH:%v   BODY:%v", urlPath.String(), string(c.Message.Body()))
+	req, res, err := metadata(urlPath.RawQuery)
 	if err != nil {
 		return c.Errorf(0, err)
 	}
 	p := c.Values()
-	limit := limits(path.Path)
+	path := Formatter(urlPath.Path)
+	limit := limits(path)
 	if limit != ApiLevelNone {
 		if p == nil {
 			return c.Errorf(0, "not login")
@@ -96,9 +97,9 @@ func (this *socket) proxy(c *cosnet.Context) interface{} {
 
 	reply := make([]byte, 0)
 	if p == nil {
-		err = request(nil, path.Path, c.Message.Body(), req, res, &reply)
+		err = request(nil, path, c.Message.Body(), req, res, &reply)
 	} else {
-		err = request(p, path.Path, c.Message.Body(), req, res, &reply)
+		err = request(p, path, c.Message.Body(), req, res, &reply)
 	}
 	if err != nil {
 		//logger.Trace("socket response error:%v,PATH:%v   Error:%v", path, err)
