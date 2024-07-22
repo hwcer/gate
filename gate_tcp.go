@@ -20,7 +20,7 @@ func init() {
 	srv.Server = cosnet.New(nil)
 	cosnet.Options.SocketConnectTime = 1000 * 3600
 	service := srv.Server.Service("")
-	_ = service.Register(srv.ping, "ping")
+	//_ = service.Register(srv.ping, "ping")
 	//_ = Sockets.Register(Socket.login)
 	_ = service.Register(srv.proxy, "/*")
 
@@ -108,7 +108,7 @@ func (this *socket) proxy(c *cosnet.Context) interface{} {
 	}
 	//logger.Trace("socket response,PATH:%v   BODY:%v", path, string(reply))
 	if err = this.setCookie(c, res); err != nil {
-		return err
+		return c.Error(err)
 	}
 	if len(reply) == 0 {
 		return nil

@@ -28,5 +28,8 @@ func WSVerify(w http.ResponseWriter, r *http.Request) (uid string, err error) {
 }
 func WSAccept(s *cosnet.Socket, uid string) {
 	_, _ = Players.Binding(uid, s)
+	v := values.Values{}
+	v[opt.Metadata.UID] = uid
+	s.Set(v)
 	return
 }
