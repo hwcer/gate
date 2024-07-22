@@ -1,6 +1,8 @@
 package gate
 
 import (
+	"github.com/hwcer/cosgo/apis"
+	"github.com/hwcer/cosgo/binder"
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/cosweb"
@@ -95,8 +97,8 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 
 	var p player
 	path := Formatter(c.Request.URL.Path)
-	limit := limits(path)
-	if limit != ApiLevelNone {
+	limit := apis.Get(path)
+	if limit != apis.None {
 		token := c.GetString(session.Options.Name, cosweb.RequestDataTypeCookie, cosweb.RequestDataTypeQuery, cosweb.RequestDataTypeHeader)
 		if token == "" {
 			return c.JSON(values.Error("token empty"))
@@ -105,40 +107,34 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 			return c.JSON(values.Parse(err))
 		}
 		p = c.Session
-		if limit == ApiLevelLogin {
+		if limit == apis.OAuth {
 			req[opt.Metadata.GUID] = c.Session.UUID()
 		} else {
 			req[opt.Metadata.UID] = c.Session.GetString(opt.Metadata.UID)
 		}
 	}
-
+	if ct := c.Binder.String(); ct != binder.Json.String() {
+		req[binder.ContentType] = ct
+	}
 	reply := make([]byte, 0)
 	if err = request(p, path, c.Body.Bytes(), req, res, &reply); err != nil {
 		return c.JSON(values.Parse(err))
 	}
-	//var cookie *http.Cookie
-	if _, err = this.setCookie(c, res); err != nil {
+	var cookie *http.Cookie
+	if cookie, err = this.setCookie(c, res); err != nil {
 		return c.JSON(values.Parse(err))
 	}
-	return c.Bytes(cosweb.ContentTypeApplicationJSON, reply)
-	//if cookie != nil {
-	//	r := map[string]any{}
-	//	if err = json.Unmarshal(reply, &r); err != nil {
-	//		return c.JSON(values.Parse(err))
-	//	}
-	//	r["cookie"] = map[string]string{"Name": cookie.Name, "Value": cookie.Value}
-	//	return c.JSON(r)
-	//} else {
-	//	return c.Bytes(cosweb.ContentTypeApplicationJSON, reply)
-	//}
+	return Writer(c, reply, cookie)
 }
 
 func (this *server) setCookie(c *cosweb.Context, cookie xshare.Metadata) (r *http.Cookie, err error) {
 	if len(cookie) == 0 {
 		return
 	}
-	if guid := cookie[opt.Metadata.GUID]; guid != "" {
-		if r, err = this.login(c, guid); err != nil {
+	if guid, ok := cookie[opt.Metadata.GUID]; ok {
+		if guid == "" {
+			err = c.Session.Delete()
+		} else if r, err = this.login(c, guid); err != nil {
 			return
 		}
 	}

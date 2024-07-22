@@ -1,40 +1,40 @@
 package gate
 
 import (
+	"github.com/hwcer/cosgo/apis"
+	"github.com/hwcer/cosweb"
+	"net/http"
 	"strings"
 	"time"
 )
 
 const elapsedMillisecond = 100 * time.Millisecond
 
-type ApiLevel int8
-
-const (
-	ApiLevelNone   ApiLevel = iota //不需要登录
-	ApiLevelLogin                  //需要登录
-	ApiLevelSelect                 //需要选择角色
-)
-
-var paths = map[string]ApiLevel{}
-
 func init() {
-	paths["game/login"] = ApiLevelNone        //登录什么都不需要
-	paths["game/role/select"] = ApiLevelLogin //选择角色 需要guid
-	paths["game/role/create"] = ApiLevelLogin //创建角色 需要guid
-}
-
-func limits(s string) ApiLevel {
-	if strings.HasPrefix(s, "/") {
-		s = s[1:]
-	}
-	if l, ok := paths[s]; ok {
-		return l
-	} else {
-		return ApiLevelSelect
-	}
+	apis.Set("game/login", apis.None)
+	apis.Set("game/role/select", apis.OAuth)
+	apis.Set("game/role/create", apis.OAuth)
 }
 
 // Formatter 格式化路径
 var Formatter = func(s string) string {
-	return s
+	return strings.ToLower(s)
 }
+
+var Writer = func(c *cosweb.Context, reply []byte, cookie *http.Cookie) error {
+	return c.Bytes(cosweb.ContentTypeApplicationJSON, reply)
+}
+
+/*
+	if cookie != nil {
+		r := map[string]any{}
+		if err = json.Unmarshal(reply, &r); err != nil {
+			return c.JSON(values.Parse(err))
+		}
+
+		//r["cookie"] = map[string]string{"Name": cookie.Name, "Value": cookie.Value}
+		return c.JSON(r)
+	} else {
+		return c.Bytes(cosweb.ContentTypeApplicationJSON, reply)
+	}
+*/

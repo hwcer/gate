@@ -2,6 +2,7 @@ package gate
 
 import (
 	"errors"
+	"github.com/hwcer/cosgo/apis"
 	"github.com/hwcer/cosgo/utils"
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosnet"
@@ -83,12 +84,12 @@ func (this *socket) proxy(c *cosnet.Context) interface{} {
 	}
 	p := c.Values()
 	path := Formatter(urlPath.Path)
-	limit := limits(path)
-	if limit != ApiLevelNone {
+	limit := apis.Get(path)
+	if limit != apis.None {
 		if p == nil {
 			return c.Errorf(0, "not login")
 		}
-		if limit == ApiLevelLogin {
+		if limit == apis.OAuth {
 			req[opt.Metadata.GUID] = p.GetString(opt.Metadata.GUID)
 		} else {
 			req[opt.Metadata.UID] = p.GetString(opt.Metadata.UID)

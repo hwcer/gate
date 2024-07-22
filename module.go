@@ -78,6 +78,9 @@ func (this *Module) Start() (err error) {
 	if p.Has(options.ProtocolTypeWSS) {
 		this.WebSocket, err = coswss.New(this.Socket.Server)
 		this.WebSocket.Binding(this.Server.Server, options.Options.Gate.Websocket)
+		//this.Server.Server.Register(options.Options.Gate.Websocket, this.WebSocket.Handle)
+		this.WebSocket.Verify = WSVerify
+		this.WebSocket.Accept = WSAccept
 	}
 	//SOCKET
 	if p.Has(options.ProtocolTypeTCP) {

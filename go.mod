@@ -4,6 +4,11 @@ go 1.22
 
 toolchain go1.22.2
 
+replace (
+	github.com/hwcer/cosgo v1.0.7 => ../cosgo
+	github.com/hwcer/coswss v0.0.1 => ../coswss
+)
+
 require (
 	github.com/hwcer/cosgo v1.0.7
 	github.com/hwcer/cosnet v0.2.1
