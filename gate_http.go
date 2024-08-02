@@ -70,7 +70,7 @@ func (this *server) login(c *cosweb.Context, guid string) (cookie *http.Cookie, 
 	cookie = &http.Cookie{Name: session.Options.Name, Path: "/"}
 
 	if cookie.Value, err = c.Session.Create(guid, value); err == nil {
-		c.Cookie.SetCookie(cookie)
+		c.Cookie(cookie)
 	}
 	//c.Header().Set(cookie.Name, cookie.Value)
 	return

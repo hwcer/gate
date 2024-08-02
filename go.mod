@@ -7,6 +7,7 @@ toolchain go1.22.2
 replace (
 	github.com/hwcer/cosgo v1.0.7 => ../cosgo
 	github.com/hwcer/coswss v0.0.1 => ../coswss
+	github.com/hwcer/cosweb v0.1.0  => ../cosweb
 )
 
 require (
