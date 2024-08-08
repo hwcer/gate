@@ -6,8 +6,8 @@ toolchain go1.22.2
 
 replace (
 	github.com/hwcer/cosgo v1.0.7 => ../cosgo
+	github.com/hwcer/cosweb v0.1.0 => ../cosweb
 	github.com/hwcer/coswss v0.0.1 => ../coswss
-	github.com/hwcer/cosweb v0.1.0  => ../cosweb
 )
 
 require (
@@ -91,7 +91,7 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.18.2 // indirect
+	github.com/spf13/viper v1.19.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b // indirect
@@ -111,7 +111,7 @@ require (
 	go.mongodb.org/mongo-driver v1.15.0 // indirect
 	go.uber.org/mock v0.4.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/net v0.24.0 // indirect

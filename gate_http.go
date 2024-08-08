@@ -21,7 +21,7 @@ var Method = []string{"POST", "GET", "OPTIONS"}
 
 func init() {
 	mod.Server = &server{}
-	mod.Server.Server = cosweb.New(nil)
+	mod.Server.Server = cosweb.New()
 	session.Options.Name = "_cookie_vars"
 }
 
@@ -82,11 +82,14 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 			err = values.Errorf(0, r)
 		}
 	}()
-
+	body, err := c.Body(false)
+	if err != nil {
+		return err
+	}
 	startTime := time.Now()
 	defer func() {
 		if elapsed := time.Since(startTime); elapsed > elapsedMillisecond {
-			logger.Debug("发现高延时请求,TIME:%v,PATH:%v,BODY:%v", elapsed, c.Request.URL.Path, string(c.Body.Bytes()))
+			logger.Debug("发现高延时请求,TIME:%v,PATH:%v,BODY:%v", elapsed, c.Request.URL.Path, string(body.Bytes()))
 		}
 	}()
 
@@ -117,7 +120,7 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 		req[binder.ContentType] = ct
 	}
 	reply := make([]byte, 0)
-	if err = request(p, path, c.Body.Bytes(), req, res, &reply); err != nil {
+	if err = request(p, path, body.Bytes(), req, res, &reply); err != nil {
 		return c.JSON(values.Parse(err))
 	}
 	var cookie *http.Cookie
