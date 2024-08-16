@@ -82,7 +82,7 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 			err = values.Errorf(0, r)
 		}
 	}()
-	body, err := c.Body(false)
+	body, err := c.Buffer()
 	if err != nil {
 		return err
 	}
