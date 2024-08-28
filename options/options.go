@@ -33,6 +33,7 @@ type Gate struct {
 	Protocol  protocol `json:"protocol"`  //1-短链接，2-长连接，3-长短链接全开
 	Broadcast int8     `json:"broadcast"` //Push message 0-关闭，1-双向通信，2-独立启动服务器,推送消息必须启用长链接
 	Websocket string   `json:"websocket"` //开启websocket时,路由前缀
+	WSVerify  bool     `json:"WSVerify"`
 }
 
 type Route struct {

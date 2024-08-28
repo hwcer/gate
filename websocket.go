@@ -4,6 +4,8 @@ import (
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosnet"
 	"github.com/hwcer/cosweb/session"
+	"github.com/hwcer/gate/options"
+	"github.com/hwcer/logger"
 	"net/http"
 )
 
@@ -12,6 +14,9 @@ func WSVerify(w http.ResponseWriter, r *http.Request) (uid string, err error) {
 	//logger.Trace("Sec-Websocket-Key:%v", r.Header.Get("Sec-Websocket-Key"))
 	//logger.Trace("Sec-Websocket-Protocol:%v", r.Header.Get("Sec-Websocket-Protocol"))
 	//logger.Trace("Sec-Websocket-Version:%v", r.Header.Get("Sec-Websocket-Version"))
+	if !options.Options.Gate.WSVerify {
+		return "", nil
+	}
 	token := r.Header.Get("Sec-Websocket-Protocol")
 	if token == "" {
 		return "", values.Error("token empty")
@@ -27,6 +32,10 @@ func WSVerify(w http.ResponseWriter, r *http.Request) (uid string, err error) {
 	return
 }
 func WSAccept(s *cosnet.Socket, uid string) {
+	if uid == "" {
+		logger.Trace("WSAccept uid empty")
+		return
+	}
 	_, _ = Players.Binding(uid, s)
 	v := values.Values{}
 	v[opt.Metadata.UID] = uid
