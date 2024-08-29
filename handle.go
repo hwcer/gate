@@ -1,7 +1,6 @@
 package gate
 
 import (
-	"github.com/hwcer/cosgo/apis"
 	"github.com/hwcer/cosweb"
 	"net/http"
 	"strings"
@@ -9,12 +8,6 @@ import (
 )
 
 const elapsedMillisecond = 100 * time.Millisecond
-
-func init() {
-	apis.Set("game/login", apis.None)
-	apis.Set("game/role/select", apis.OAuth)
-	apis.Set("game/role/create", apis.OAuth)
-}
 
 // Formatter 格式化路径
 var Formatter = func(s string) string {

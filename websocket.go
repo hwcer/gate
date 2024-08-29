@@ -5,7 +5,6 @@ import (
 	"github.com/hwcer/cosnet"
 	"github.com/hwcer/cosweb/session"
 	"github.com/hwcer/gate/options"
-	"github.com/hwcer/logger"
 	"net/http"
 )
 
@@ -32,8 +31,7 @@ func WSVerify(w http.ResponseWriter, r *http.Request) (uid string, err error) {
 	return
 }
 func WSAccept(s *cosnet.Socket, uid string) {
-	if uid == "" {
-		logger.Trace("WSAccept uid empty")
+	if !options.Options.Gate.WSVerify {
 		return
 	}
 	_, _ = Players.Binding(uid, s)
