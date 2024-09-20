@@ -37,7 +37,7 @@ func (this *server) init() error {
 	access := middleware.NewAccessControlAllow()
 	access.Origin("*")
 	access.Methods(Method...)
-	headers := []string{session.Options.Name, "Content-Type", "Set-Cookie", "*"}
+	headers := []string{session.Options.Name, "Content-Type", "Set-Cookie", "X-Forwarded-Key", "X-Forwarded-Val", "*"}
 	access.Headers(strings.Join(headers, ","))
 	this.Server.Use(access.Handle)
 	this.Server.Register("/*", this.proxy, Method...)
@@ -68,11 +68,11 @@ func (this *server) login(c *cosweb.Context, guid string) (cookie *http.Cookie, 
 	value := values.Values{}
 	value["time"] = time.Now().Unix()
 	cookie = &http.Cookie{Name: session.Options.Name, Path: "/"}
-
 	if cookie.Value, err = c.Session.Create(guid, value); err == nil {
 		c.Cookie(cookie)
 	}
-	//c.Header().Set(cookie.Name, cookie.Value)
+	c.Header().Set("X-Forwarded-Key", session.Options.Name)
+	c.Header().Set("X-Forwarded-Val", cookie.Value)
 	return
 }
 
