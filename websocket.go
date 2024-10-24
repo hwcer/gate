@@ -12,7 +12,7 @@ func WSVerify(w http.ResponseWriter, r *http.Request) (uid string, err error) {
 	//logger.Trace("Sec-Websocket-Extensions:%v", r.Header.Get("Sec-Websocket-Extensions"))
 	//logger.Trace("Sec-Websocket-Key:%v", r.Header.Get("Sec-Websocket-Key"))
 	//logger.Trace("Sec-Websocket-Protocol:%v", r.Header.Get("Sec-Websocket-Protocol"))
-	//logger.Trace("Sec-Websocket-Version:%v", r.Header.Get("Sec-Websocket-Version"))
+	//logger.Trace("Sec-Websocket-Branch:%v", r.Header.Get("Sec-Websocket-Branch"))
 	if !options.Options.Gate.WSVerify {
 		return "", nil
 	}
