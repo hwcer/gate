@@ -62,8 +62,9 @@ func broadcast(c *xshare.Context) any {
 	path := c.GetMetadata(opt.Metadata.API)
 
 	mod.Socket.Broadcast(path, c.Bytes(), func(s *cosnet.Socket) bool {
-		if p := s.Values(); p != nil && sid != "" && p.GetString("sid") == sid {
-			return true
+		p, _ := s.Data.Get().(*Player)
+		if p != nil && sid != "" && p.GetString("sid") == sid {
+			return false
 		} else {
 			return false
 		}

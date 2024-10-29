@@ -24,7 +24,7 @@ func WSVerify(w http.ResponseWriter, r *http.Request) (uid string, err error) {
 	if err = sess.Start(token, session.StartTypeAuth); err != nil {
 		return "", values.Parse(err)
 	}
-	uid = sess.GetString(opt.Metadata.UID)
+	uid, _ = sess.Get(opt.Metadata.UID).(string)
 	if uid == "" {
 		return "", values.Error("请登录")
 	}
@@ -34,7 +34,7 @@ func WSAccept(s *cosnet.Socket, uid string) {
 	if !options.Options.Gate.WSVerify {
 		return
 	}
-	_, _ = Players.Binding(uid, s)
+	_, _ = Players.Binding(uid, s, nil)
 	v := values.Values{}
 	v[opt.Metadata.UID] = uid
 	s.Set(v)

@@ -82,7 +82,7 @@ func (this *socket) proxy(c *cosnet.Context) interface{} {
 	if err != nil {
 		return c.Errorf(0, err)
 	}
-	p := c.Values()
+	p, _ := c.Data.Get().(*Player)
 	path := Formatter(urlPath.Path)
 	limit := apis.Get(path)
 	if limit != apis.None {
@@ -120,28 +120,32 @@ func (this *socket) setCookie(c *cosnet.Context, cookie xshare.Metadata) (err er
 	if len(cookie) == 0 {
 		return
 	}
-	var v values.Values
+	//var v values.Values
 	//账号登录
+	vs := values.Values{}
+	for k, v := range cookie {
+		vs[k] = v
+	}
 	if i := c.Socket.Get(); i == nil {
 		if guid := cookie[opt.Metadata.GUID]; guid != "" {
-			v = values.Values{}
-			c.Socket.Set(v)
+			_, err = Players.Binding(guid, c.Socket, vs)
 		} else {
 			return errors.New("not login")
 		}
 	} else {
-		v = i.(values.Values)
+		p, _ := i.(*Player)
+		p.Merge(vs, true)
 	}
 	//角色绑定
-	if uid := cookie[opt.Metadata.UID]; uid != "" {
-		if _, err = Players.Binding(uid, c.Socket); err != nil {
-			return
-		}
-	}
-	//同步数据
-	for key, val := range cookie {
-		v.Set(key, val)
-	}
+	//if uid := cookie[opt.Metadata.UID]; uid != "" {
+	//	if _, err = Players.Binding(uid, c.Socket); err != nil {
+	//		return
+	//	}
+	//}
+	////同步数据
+	//for key, val := range cookie {
+	//	v.Set(key, val)
+	//}
 	return
 }
 
@@ -157,21 +161,12 @@ func (this *socket) Disconnect(sock *cosnet.Socket, _ interface{}) bool {
 
 func (this *socket) Destroyed(sock *cosnet.Socket, _ interface{}) bool {
 	logger.Debug("Destroyed:%v", sock.Id())
-	vs := sock.Values()
-	if vs == nil {
-		return true
-	}
-	uid := vs.GetString(opt.Metadata.UID)
-	if uid == "" {
-		return true
-
-	}
-	p := Players.Get(uid)
+	p, _ := sock.Get().(*Player)
 	if p == nil {
 		return true
 	}
 	if p.socket != nil && p.socket.Id() == sock.Id() {
-		Players.Delete(uid)
+		Players.Delete(p.uuid)
 		//_ = share.Notify.Publish(share.NotifyChannelSocketDestroyed, uid)
 	}
 	return true

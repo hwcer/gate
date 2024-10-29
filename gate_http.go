@@ -64,11 +64,9 @@ func (this *server) Listen(ln net.Listener) (err error) {
 }
 
 // Login 登录
-func (this *server) login(c *cosweb.Context, guid string) (cookie *http.Cookie, err error) {
-	value := values.Values{}
-	value["time"] = time.Now().Unix()
+func (this *server) login(c *cosweb.Context, p *Player) (cookie *http.Cookie, err error) {
 	cookie = &http.Cookie{Name: session.Options.Name, Path: "/"}
-	if cookie.Value, err = c.Session.Create(guid, value); err == nil {
+	if cookie.Value, err = c.Session.Create(p.uuid, p); err == nil {
 		c.Cookie(cookie)
 	}
 	c.Header().Set("X-Forwarded-Key", session.Options.Name)
@@ -98,7 +96,7 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 		return c.JSON(values.Parse(err))
 	}
 
-	var p player
+	var p *Player
 	path := Formatter(c.Request.URL.Path)
 	limit := apis.Get(path)
 	if limit != apis.None {
@@ -109,11 +107,14 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 		if err = c.Session.Start(token, session.StartTypeAuth); err != nil {
 			return c.JSON(values.Parse(err))
 		}
-		p = c.Session
+		p, _ = c.Session.Values().(*Player)
+		if p == nil {
+			return c.JSON(values.Error("not login"))
+		}
 		if limit == apis.OAuth {
-			req[opt.Metadata.GUID] = c.Session.UUID()
+			req[opt.Metadata.GUID] = p.uuid
 		} else {
-			req[opt.Metadata.UID] = c.Session.GetString(opt.Metadata.UID)
+			req[opt.Metadata.UID] = p.GetString(opt.Metadata.UID)
 		}
 	}
 	if ct := c.Binder.String(); ct != binder.Json.String() {
@@ -134,16 +135,21 @@ func (this *server) setCookie(c *cosweb.Context, cookie xshare.Metadata) (r *htt
 	if len(cookie) == 0 {
 		return
 	}
+	vs := values.Values{}
+	for k, v := range cookie {
+		vs[k] = v
+	}
+	var p *Player
 	if guid, ok := cookie[opt.Metadata.GUID]; ok {
 		if guid == "" {
 			err = c.Session.Delete()
-		} else if r, err = this.login(c, guid); err != nil {
-			return
+		} else if p, err = Players.Login(guid, vs); err == nil {
+			_, err = this.login(c, p)
 		}
-	}
-	for key, val := range cookie {
-		if key != opt.Metadata.GUID {
-			c.Session.Set(key, val)
+	} else {
+		p, _ = c.Session.Values().(*Player)
+		if p != nil {
+			p.Merge(vs, true)
 		}
 	}
 	return

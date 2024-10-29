@@ -13,8 +13,8 @@ func NewPlayer(uuid string, socket *cosnet.Socket) *Player {
 }
 
 type Player struct {
-	values.Values //用户登录信息,推荐存入一个struct
-	uuid          string
+	values.Values        //用户登录信息,推荐存入一个struct
+	uuid          string //GUID
 	mutex         sync.Mutex
 	socket        *cosnet.Socket
 }
@@ -35,10 +35,10 @@ func (this *Player) replace(socket *cosnet.Socket) {
 		old.Close()
 	}
 	//合并数据
-	for k, v := range socket.Values() {
-		this.Values.Set(k, v)
-	}
-	socket.Set(this.Values)
+	//for k, v := range socket.Values() {
+	//	this.Values.Set(k, v)
+	//}
+	//socket.Set(this.Values)
 	return
 }
 
@@ -48,6 +48,29 @@ func (this *Player) UUID() string {
 
 func (this *Player) Socket() *cosnet.Socket {
 	return this.socket
+}
+
+func (this *Player) Get(key string) interface{} {
+	return this.Values.Get(key)
+}
+func (this *Player) Set(key string, value any) any {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+	vs := values.Values{}
+	vs.Merge(this.Values, true)
+	vs.Set(key, value)
+	this.Values = vs
+	return value
+}
+
+// Merge 批量设置Cookie信息
+func (this *Player) Merge(data map[string]any, replace bool) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+	vs := values.Values{}
+	vs.Merge(this.Values, false)
+	vs.Merge(data, replace)
+	this.Values = vs
 }
 
 func (this *players) Get(uuid string) *Player {
@@ -72,22 +95,38 @@ func (this *players) Delete(uuid string) bool {
 	this.Map.Delete(uuid)
 	return true
 }
+func (this *players) Login(uuid string, data values.Values) (r *Player, err error) {
+	r = NewPlayer(uuid, nil)
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	r.Values = values.Values{}
+	if i, loaded := this.Map.LoadOrStore(uuid, r); loaded {
+		r, _ = i.(*Player)
+		r.mutex.Lock()
+		defer r.mutex.Unlock()
+		r.Values.Merge(data, true)
+	} else {
+		r.Values.Merge(data, true)
+	}
+	return
+}
 
 // Binding 身份认证绑定socket
-func (this *players) Binding(uuid string, socket *cosnet.Socket) (r *Player, err error) {
+func (this *players) Binding(uuid string, socket *cosnet.Socket, data values.Values) (r *Player, err error) {
 	r = NewPlayer(uuid, socket)
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
+	r.Values = values.Values{}
 	if i, loaded := this.Map.LoadOrStore(uuid, r); loaded {
 		r, _ = i.(*Player)
 		r.mutex.Lock()
 		defer r.mutex.Unlock()
 		r.replace(socket)
+		r.Values.Merge(data, true)
 		socket.Emit(cosnet.EventTypeReconnected)
 	} else {
-		r.Values = socket.Values()
+		r.Values.Merge(data, true)
 		socket.Emit(cosnet.EventTypeConnected)
 	}
-
 	return
 }
