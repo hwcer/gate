@@ -25,12 +25,12 @@ func metadata(raw string) (req, res xshare.Metadata, err error) {
 	return
 }
 
-type player interface {
-	GetString(string) string
-}
+//type player interface {
+//	GetString(string) string
+//}
 
 // request rpc转发,返回实际转发的servicePath
-func request(p player, path string, args []byte, req, res xshare.Metadata, reply any) (err error) {
+func request(p *Player, path string, args []byte, req, res xshare.Metadata, reply any) (err error) {
 	if strings.HasPrefix(path, "/") {
 		path = strings.TrimPrefix(path, "/")
 	}

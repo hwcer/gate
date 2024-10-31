@@ -8,8 +8,8 @@ import (
 
 var Players = players{Map: sync.Map{}}
 
-func NewPlayer(uuid string, socket *cosnet.Socket) *Player {
-	return &Player{uuid: uuid, socket: socket}
+func NewPlayer(uuid string) *Player {
+	return &Player{uuid: uuid}
 }
 
 type Player struct {
@@ -95,38 +95,46 @@ func (this *players) Delete(uuid string) bool {
 	this.Map.Delete(uuid)
 	return true
 }
-func (this *players) Login(uuid string, data values.Values) (r *Player, err error) {
-	r = NewPlayer(uuid, nil)
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	r.Values = values.Values{}
-	if i, loaded := this.Map.LoadOrStore(uuid, r); loaded {
-		r, _ = i.(*Player)
-		r.mutex.Lock()
-		defer r.mutex.Unlock()
-		r.Values.Merge(data, true)
+
+type loginCallback func(player *Player, loaded bool) error
+
+func (this *players) login(uuid string, data values.Values, callback loginCallback) error {
+	p := NewPlayer(uuid)
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.Values = values.Values{}
+	i, loaded := this.Map.LoadOrStore(uuid, p)
+	if loaded {
+		p, _ = i.(*Player)
+		p.mutex.Lock()
+		defer p.mutex.Unlock()
+		p.Values.Merge(data, true)
 	} else {
-		r.Values.Merge(data, true)
+		p.Values.Merge(data, true)
 	}
+	return callback(p, loaded)
+}
+
+func (this *players) Login(uuid string, data values.Values) (r *Player, err error) {
+	err = this.login(uuid, data, func(player *Player, _ bool) error {
+		r = player
+		return nil
+	})
 	return
 }
 
 // Binding 身份认证绑定socket
 func (this *players) Binding(uuid string, socket *cosnet.Socket, data values.Values) (r *Player, err error) {
-	r = NewPlayer(uuid, socket)
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	r.Values = values.Values{}
-	if i, loaded := this.Map.LoadOrStore(uuid, r); loaded {
-		r, _ = i.(*Player)
-		r.mutex.Lock()
-		defer r.mutex.Unlock()
-		r.replace(socket)
-		r.Values.Merge(data, true)
-		socket.Emit(cosnet.EventTypeReconnected)
-	} else {
-		r.Values.Merge(data, true)
-		socket.Emit(cosnet.EventTypeConnected)
-	}
+	err = this.login(uuid, data, func(player *Player, loaded bool) error {
+		player.socket = socket
+		if loaded {
+			r.replace(socket)
+			socket.Emit(cosnet.EventTypeReconnected)
+		} else {
+			socket.Emit(cosnet.EventTypeConnected)
+		}
+		r = player
+		return nil
+	})
 	return
 }
