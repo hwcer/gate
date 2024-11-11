@@ -4,6 +4,7 @@ import (
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosrpc/xclient"
 	"github.com/hwcer/cosrpc/xshare"
+	"github.com/hwcer/cosweb/session"
 	"github.com/hwcer/gate/options"
 	"github.com/hwcer/registry"
 	"net/url"
@@ -30,7 +31,7 @@ func metadata(raw string) (req, res xshare.Metadata, err error) {
 //}
 
 // request rpc转发,返回实际转发的servicePath
-func request(p *Player, path string, args []byte, req, res xshare.Metadata, reply any) (err error) {
+func request(p *session.Player, path string, args []byte, req, res xshare.Metadata, reply any) (err error) {
 	if strings.HasPrefix(path, "/") {
 		path = strings.TrimPrefix(path, "/")
 	}

@@ -3,6 +3,7 @@ package gate
 import (
 	"github.com/hwcer/cosnet"
 	"github.com/hwcer/cosrpc/xshare"
+	"github.com/hwcer/cosweb/session"
 	"github.com/hwcer/gate/options"
 	"github.com/hwcer/logger"
 	"github.com/hwcer/registry"
@@ -37,7 +38,7 @@ func send(c *xshare.Context) any {
 		logger.Debug("用户不在线,消息丢弃:%v", uid)
 		return nil
 	}
-	sock := p.Socket()
+	sock := Players.Socket(p)
 	if sock == nil {
 		logger.Debug("用户不在线,消息丢弃:%v", uid)
 		return nil
@@ -62,7 +63,7 @@ func broadcast(c *xshare.Context) any {
 	path := c.GetMetadata(opt.Metadata.API)
 
 	mod.Socket.Broadcast(path, c.Bytes(), func(s *cosnet.Socket) bool {
-		p, _ := s.Data.Get().(*Player)
+		p, _ := s.Data.Get().(*session.Player)
 		if p != nil && sid != "" && p.GetString("sid") == sid {
 			return false
 		} else {

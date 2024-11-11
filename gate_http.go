@@ -64,10 +64,10 @@ func (this *server) Listen(ln net.Listener) (err error) {
 }
 
 // Login 登录
-func (this *server) login(c *cosweb.Context, p *Player) (cookie *http.Cookie, err error) {
+func (this *server) login(c *cosweb.Context, uuid string, data map[string]any) (cookie *http.Cookie, err error) {
 	cookie = &http.Cookie{Name: session.Options.Name, Path: "/"}
-	if cookie.Value, err = c.Session.Create(p.uuid, p); err == nil {
-		c.Cookie(cookie)
+	if cookie.Value, err = c.Session.Create(uuid, data); err == nil {
+		http.SetCookie(c.Response, cookie)
 	}
 	c.Header().Set("X-Forwarded-Key", session.Options.Name)
 	c.Header().Set("X-Forwarded-Val", cookie.Value)
@@ -96,7 +96,7 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 		return c.JSON(values.Parse(err))
 	}
 
-	var p *Player
+	var p *session.Player
 	path := Formatter(c.Request.URL.Path)
 	limit := apis.Get(path)
 	if limit != apis.None {
@@ -104,15 +104,15 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 		if token == "" {
 			return c.JSON(values.Error("token empty"))
 		}
-		if err = c.Session.Start(token, session.StartTypeAuth); err != nil {
+		if err = c.Session.Verify(token); err != nil {
 			return c.JSON(values.Parse(err))
 		}
-		p, _ = c.Session.Values().(*Player)
+		p = c.Session.Player
 		if p == nil {
 			return c.JSON(values.Error("not login"))
 		}
 		if limit == apis.OAuth {
-			req[opt.Metadata.GUID] = p.uuid
+			req[opt.Metadata.GUID] = p.UUID()
 		} else {
 			req[opt.Metadata.UID] = p.GetString(opt.Metadata.UID)
 		}
@@ -137,20 +137,19 @@ func (this *server) setCookie(c *cosweb.Context, cookie xshare.Metadata) (r *htt
 	}
 	vs := values.Values{}
 	for k, v := range cookie {
-		vs[k] = v
+		if k != opt.Metadata.GUID {
+			vs[k] = v
+		}
 	}
-	var p *Player
 	if guid, ok := cookie[opt.Metadata.GUID]; ok {
 		if guid == "" {
+			Players.Delete(c.Session.Player)
 			err = c.Session.Delete()
-		} else if p, err = Players.Login(guid, vs); err == nil {
-			_, err = this.login(c, p)
+		} else if r, err = this.login(c, guid, vs); err == nil {
+			err = Players.Login(c.Session.Player, nil)
 		}
-	} else {
-		p, _ = c.Session.Values().(*Player)
-		if p != nil {
-			p.Merge(vs, true)
-		}
+	} else if c.Session.Player != nil {
+		c.Session.Player.Update(vs)
 	}
 	return
 }

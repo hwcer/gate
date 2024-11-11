@@ -8,6 +8,7 @@ import (
 	"github.com/hwcer/cosnet"
 	"github.com/hwcer/cosnet/tcp"
 	"github.com/hwcer/cosrpc/xshare"
+	"github.com/hwcer/cosweb/session"
 	"github.com/hwcer/logger"
 	"net"
 	"net/url"
@@ -82,7 +83,7 @@ func (this *socket) proxy(c *cosnet.Context) interface{} {
 	if err != nil {
 		return c.Errorf(0, err)
 	}
-	p, _ := c.Data.Get().(*Player)
+	p, _ := c.Data.Get().(*session.Player)
 	path := Formatter(urlPath.Path)
 	limit := apis.Get(path)
 	if limit != apis.None {
@@ -120,32 +121,27 @@ func (this *socket) setCookie(c *cosnet.Context, cookie xshare.Metadata) (err er
 	if len(cookie) == 0 {
 		return
 	}
-	//var v values.Values
 	//账号登录
 	vs := values.Values{}
 	for k, v := range cookie {
-		vs[k] = v
+		if k != opt.Metadata.GUID {
+			vs[k] = v
+		}
 	}
-	if i := c.Socket.Get(); i == nil {
-		if guid := cookie[opt.Metadata.GUID]; guid != "" {
-			_, err = Players.Binding(guid, c.Socket, vs)
+	if guid, ok := cookie[opt.Metadata.GUID]; ok {
+		if guid == "" {
+			c.Socket.Close() //TODO
 		} else {
-			return errors.New("not login")
+			_, err = Players.Binding(c.Socket, guid, vs)
 		}
 	} else {
-		p, _ := i.(*Player)
-		p.Merge(vs, true)
+		if i := c.Socket.Get(); i == nil {
+			return errors.New("not login")
+		} else {
+			p, _ := i.(*session.Player)
+			p.Update(vs)
+		}
 	}
-	//角色绑定
-	//if uid := cookie[opt.Metadata.UID]; uid != "" {
-	//	if _, err = Players.Binding(uid, c.Socket); err != nil {
-	//		return
-	//	}
-	//}
-	////同步数据
-	//for key, val := range cookie {
-	//	v.Set(key, val)
-	//}
 	return
 }
 
@@ -161,12 +157,13 @@ func (this *socket) Disconnect(sock *cosnet.Socket, _ interface{}) bool {
 
 func (this *socket) Destroyed(sock *cosnet.Socket, _ interface{}) bool {
 	logger.Debug("Destroyed:%v", sock.Id())
-	p, _ := sock.Get().(*Player)
+	p, _ := sock.Get().(*session.Player)
 	if p == nil {
 		return true
 	}
-	if p.socket != nil && p.socket.Id() == sock.Id() {
-		Players.Delete(p.uuid)
+	s := Players.Socket(p)
+	if s != nil && s.Id() == sock.Id() {
+		Players.Delete(p)
 		//_ = share.Notify.Publish(share.NotifyChannelSocketDestroyed, uid)
 	}
 	return true
