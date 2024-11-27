@@ -1,26 +1,15 @@
 module github.com/hwcer/gate
 
-go 1.22
+go 1.22.2
 
-toolchain go1.22.2
-
-replace (
-	github.com/hwcer/cosgo v1.0.7 => ../cosgo
-	github.com/hwcer/cosnet v0.2.1 => ../cosnet
-	github.com/hwcer/cosweb v0.1.0 => ../cosweb
-	github.com/hwcer/coswss v0.0.1 => ../coswss
-	github.com/hwcer/registry v0.0.6 => ../registry
-)
+toolchain go1.23.2
 
 require (
-	github.com/hwcer/cosgo v1.0.7
+	github.com/hwcer/cosgo v1.1.0
 	github.com/hwcer/cosnet v0.2.1
 	github.com/hwcer/cosrpc v0.0.6
 	github.com/hwcer/cosweb v0.1.0
 	github.com/hwcer/coswss v0.0.1
-	github.com/hwcer/logger v0.0.5
-	github.com/hwcer/registry v0.0.6
-	github.com/hwcer/scc v0.0.7
 	github.com/soheilhy/cmux v0.1.5
 )
 
@@ -56,7 +45,9 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/hwcer/schema v0.0.4 // indirect
+	github.com/hwcer/logger v0.0.5 // indirect
+	github.com/hwcer/registry v0.0.6 // indirect
+	github.com/hwcer/scc v0.0.7 // indirect
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/juju/ratelimit v1.0.2 // indirect
@@ -113,14 +104,14 @@ require (
 	go.mongodb.org/mongo-driver v1.15.0 // indirect
 	go.uber.org/mock v0.4.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.23.0 // indirect
-	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f // indirect
-	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/net v0.24.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.20.0 // indirect
-	golang.org/x/text v0.15.0 // indirect
-	golang.org/x/tools v0.20.0 // indirect
+	golang.org/x/crypto v0.29.0 // indirect
+	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
+	golang.org/x/mod v0.22.0 // indirect
+	golang.org/x/net v0.31.0 // indirect
+	golang.org/x/sync v0.9.0 // indirect
+	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/text v0.20.0 // indirect
+	golang.org/x/tools v0.27.0 // indirect
 	google.golang.org/protobuf v1.34.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

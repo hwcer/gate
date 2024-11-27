@@ -4,10 +4,10 @@ import (
 	"errors"
 	"github.com/hwcer/cosgo"
 	"github.com/hwcer/cosgo/options"
+	"github.com/hwcer/cosgo/scc"
 	"github.com/hwcer/cosrpc/xclient"
 	"github.com/hwcer/cosrpc/xserver"
 	"github.com/hwcer/coswss"
-	"github.com/hwcer/scc"
 	"github.com/soheilhy/cmux"
 	"net"
 	"strings"
@@ -29,10 +29,7 @@ type Module struct {
 }
 
 func (this *Module) Init() (err error) {
-	err = options.Initialize(func() error {
-		return cosgo.Config.Unmarshal(options.Options)
-	})
-	if err != nil {
+	if err = options.Initialize(); err != nil {
 		return
 	}
 	if options.Gate.Address == "" {

@@ -2,6 +2,7 @@ package gate
 
 import (
 	"errors"
+	"github.com/hwcer/cosgo/logger"
 	"github.com/hwcer/cosgo/options"
 	"github.com/hwcer/cosgo/utils"
 	"github.com/hwcer/cosgo/values"
@@ -9,7 +10,6 @@ import (
 	"github.com/hwcer/cosnet/tcp"
 	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/cosweb/session"
-	"github.com/hwcer/logger"
 	"net"
 	"net/url"
 	"strconv"

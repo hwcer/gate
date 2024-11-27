@@ -2,11 +2,11 @@ package gate
 
 import (
 	"github.com/hwcer/cosgo/options"
+	"github.com/hwcer/cosgo/registry"
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosrpc/xclient"
 	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/cosweb/session"
-	"github.com/hwcer/registry"
 	"net/url"
 	"strings"
 )
