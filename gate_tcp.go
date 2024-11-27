@@ -2,7 +2,7 @@ package gate
 
 import (
 	"errors"
-	"github.com/hwcer/cosgo/apis"
+	"github.com/hwcer/cosgo/options"
 	"github.com/hwcer/cosgo/utils"
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosnet"
@@ -57,7 +57,7 @@ func (this *socket) Start(address string) error {
 }
 func (this *socket) Listen(ln net.Listener) error {
 	this.Server.Accept(&tcp.Listener{Listener: ln})
-	logger.Trace("网关长连接启动：%v", opt.Gate.Address)
+	logger.Trace("网关长连接启动：%v", options.Gate.Address)
 	return nil
 }
 
@@ -85,15 +85,15 @@ func (this *socket) proxy(c *cosnet.Context) interface{} {
 	}
 	p, _ := c.Data.Get().(*session.Player)
 	path := Formatter(urlPath.Path)
-	limit := apis.Get(path)
-	if limit != apis.None {
+	limit := options.Apis.Get(path)
+	if limit != options.ApisTypeNone {
 		if p == nil {
 			return c.Errorf(0, "not login")
 		}
-		if limit == apis.OAuth {
-			req[opt.Metadata.GUID] = p.GetString(opt.Metadata.GUID)
+		if limit == options.ApisTypeOAuth {
+			req[options.ServiceMetadataGUID] = p.GetString(options.ServiceMetadataGUID)
 		} else {
-			req[opt.Metadata.UID] = p.GetString(opt.Metadata.UID)
+			req[options.ServiceMetadataUID] = p.GetString(options.ServiceMetadataUID)
 		}
 	}
 
@@ -124,11 +124,11 @@ func (this *socket) setCookie(c *cosnet.Context, cookie xshare.Metadata) (err er
 	//账号登录
 	vs := values.Values{}
 	for k, v := range cookie {
-		if k != opt.Metadata.GUID {
+		if k != options.ServiceMetadataGUID {
 			vs[k] = v
 		}
 	}
-	if guid, ok := cookie[opt.Metadata.GUID]; ok {
+	if guid, ok := cookie[options.ServiceMetadataGUID]; ok {
 		if guid == "" {
 			c.Socket.Close() //TODO
 		} else {

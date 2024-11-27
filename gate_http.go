@@ -1,8 +1,8 @@
 package gate
 
 import (
-	"github.com/hwcer/cosgo/apis"
 	"github.com/hwcer/cosgo/binder"
+	"github.com/hwcer/cosgo/options"
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/cosweb"
@@ -49,7 +49,7 @@ func (this *server) Start(address string) (err error) {
 		return
 	}
 	if err = this.Server.Start(address); err == nil {
-		logger.Trace("网关短连接启动：%v", opt.Gate.Address)
+		logger.Trace("网关短连接启动：%v", options.Gate.Address)
 	}
 	return
 }
@@ -58,7 +58,7 @@ func (this *server) Listen(ln net.Listener) (err error) {
 		return
 	}
 	if err = this.Server.Listen(ln); err == nil {
-		logger.Trace("网关短连接启动：%v", opt.Gate.Address)
+		logger.Trace("网关短连接启动：%v", options.Gate.Address)
 	}
 	return
 }
@@ -98,8 +98,8 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 
 	var p *session.Player
 	path := Formatter(c.Request.URL.Path)
-	limit := apis.Get(path)
-	if limit != apis.None {
+	limit := options.Apis.Get(path)
+	if limit != options.ApisTypeNone {
 		token := c.GetString(session.Options.Name, cosweb.RequestDataTypeCookie, cosweb.RequestDataTypeQuery, cosweb.RequestDataTypeHeader)
 		if token == "" {
 			return c.JSON(values.Error("token empty"))
@@ -111,10 +111,10 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 		if p == nil {
 			return c.JSON(values.Error("not login"))
 		}
-		if limit == apis.OAuth {
-			req[opt.Metadata.GUID] = p.UUID()
+		if limit == options.ApisTypeOAuth {
+			req[options.ServiceMetadataGUID] = p.UUID()
 		} else {
-			req[opt.Metadata.UID] = p.GetString(opt.Metadata.UID)
+			req[options.ServiceMetadataUID] = p.GetString(options.ServiceMetadataUID)
 		}
 	}
 	if ct := c.Binder.String(); ct != binder.Json.String() {
@@ -137,11 +137,11 @@ func (this *server) setCookie(c *cosweb.Context, cookie xshare.Metadata) (r *htt
 	}
 	vs := values.Values{}
 	for k, v := range cookie {
-		if k != opt.Metadata.GUID {
+		if k != options.ServiceMetadataGUID {
 			vs[k] = v
 		}
 	}
-	if guid, ok := cookie[opt.Metadata.GUID]; ok {
+	if guid, ok := cookie[options.ServiceMetadataGUID]; ok {
 		if guid == "" {
 			Players.Delete(c.Session.Player)
 			err = c.Session.Delete()
