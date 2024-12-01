@@ -2,9 +2,10 @@ package gate
 
 import (
 	"github.com/hwcer/cosgo/options"
+	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosnet"
-	"github.com/hwcer/cosweb/session"
+	"github.com/hwcer/gate/players"
 	"net/http"
 )
 
@@ -34,7 +35,7 @@ func WSAccept(s *cosnet.Socket, uid string) {
 	if !options.Options.Gate.WSVerify {
 		return
 	}
-	_, _ = Players.Binding(s, uid, nil)
+	_, _ = players.Players.Binding(s, uid, nil)
 	v := values.Values{}
 	v[options.ServiceMetadataUID] = uid
 	s.Set(v)

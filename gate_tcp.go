@@ -4,12 +4,11 @@ import (
 	"errors"
 	"github.com/hwcer/cosgo/logger"
 	"github.com/hwcer/cosgo/options"
+	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosgo/utils"
-	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosnet"
 	"github.com/hwcer/cosnet/tcp"
-	"github.com/hwcer/cosrpc/xshare"
-	"github.com/hwcer/cosweb/session"
+	"github.com/hwcer/gate/players"
 	"net"
 	"net/url"
 	"strconv"
@@ -83,7 +82,7 @@ func (this *socket) proxy(c *cosnet.Context) interface{} {
 	if err != nil {
 		return c.Errorf(0, err)
 	}
-	p, _ := c.Data.Get().(*session.Player)
+	p, _ := c.Data.Get().(*session.Data)
 	path := Formatter(urlPath.Path)
 	limit := options.Apis.Get(path)
 	if limit != options.ApisTypeNone {
@@ -117,31 +116,26 @@ func (this *socket) proxy(c *cosnet.Context) interface{} {
 	return reply
 }
 
-func (this *socket) setCookie(c *cosnet.Context, cookie xshare.Metadata) (err error) {
+func (this *socket) setCookie(c *cosnet.Context, cookie options.Metadata) (err error) {
 	if len(cookie) == 0 {
 		return
 	}
+	var s *session.Data
+	if i := c.Socket.Get(); i != nil {
+		s = i.(*session.Data)
+	}
 	//账号登录
-	vs := values.Values{}
-	for k, v := range cookie {
-		if k != options.ServiceMetadataGUID {
-			vs[k] = v
-		}
-	}
-	if guid, ok := cookie[options.ServiceMetadataGUID]; ok {
-		if guid == "" {
-			c.Socket.Close() //TODO
-		} else {
-			_, err = Players.Binding(c.Socket, guid, vs)
-		}
+	if guid, ok := cookie[options.ServicePlayerOAuth]; ok {
+		_, err = players.Binding(c.Socket, guid, CookiesFilter(cookie))
+	} else if _, ok = cookie[options.ServicePlayerLogout]; ok {
+		players.Delete(s)
+		c.Socket.Close()
+	} else if s != nil {
+		CookiesUpdate(cookie, s)
 	} else {
-		if i := c.Socket.Get(); i == nil {
-			return errors.New("not login")
-		} else {
-			p, _ := i.(*session.Player)
-			p.Update(vs)
-		}
+		return errors.New("not login")
 	}
+
 	return
 }
 
@@ -157,13 +151,13 @@ func (this *socket) Disconnect(sock *cosnet.Socket, _ interface{}) bool {
 
 func (this *socket) Destroyed(sock *cosnet.Socket, _ interface{}) bool {
 	logger.Debug("Destroyed:%v", sock.Id())
-	p, _ := sock.Get().(*session.Player)
+	p, _ := sock.Get().(*session.Data)
 	if p == nil {
 		return true
 	}
-	s := Players.Socket(p)
+	s := players.Players.Socket(p)
 	if s != nil && s.Id() == sock.Id() {
-		Players.Delete(p)
+		players.Players.Delete(p)
 		//_ = share.Notify.Publish(share.NotifyChannelSocketDestroyed, uid)
 	}
 	return true

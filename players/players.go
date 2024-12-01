@@ -1,8 +1,8 @@
-package gate
+package players
 
 import (
+	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosnet"
-	"github.com/hwcer/cosweb/session"
 	"sync"
 )
 
@@ -10,24 +10,14 @@ const (
 	SessionPlayerSocketName = "player.sock"
 )
 
-var Players = players{Map: sync.Map{}}
-
-//func NewPlayer(p *session.Player) *Player {
-//	sp := &Player{Player: p}
-//	return sp
-//}
-//
-//type Player struct {
-//	*session.Player
-//	socket *cosnet.Socket
-//}
+type loginCallback func(player *session.Data, loaded bool) error
 
 type players struct {
 	sync.Map
 }
 
 // replace 顶号
-func (this *players) replace(p *session.Player, socket *cosnet.Socket) {
+func (this *players) replace(p *session.Data, socket *cosnet.Socket) {
 	old := this.Socket(p)
 	p.Set(SessionPlayerSocketName, socket)
 	if old == nil || old.Id() == socket.Id() {
@@ -40,7 +30,7 @@ func (this *players) replace(p *session.Player, socket *cosnet.Socket) {
 	return
 }
 
-func (this *players) Socket(p *session.Player) *cosnet.Socket {
+func (this *players) Socket(p *session.Data) *cosnet.Socket {
 	i := p.Get(SessionPlayerSocketName)
 	if i == nil {
 		return nil
@@ -49,25 +39,25 @@ func (this *players) Socket(p *session.Player) *cosnet.Socket {
 	return r
 }
 
-func (this *players) Get(uuid string) *session.Player {
+func (this *players) Get(uuid string) *session.Data {
 	v, ok := this.Load(uuid)
 	if !ok {
 		return nil
 	}
-	p, _ := v.(*session.Player)
+	p, _ := v.(*session.Data)
 	return p
 }
 
-func (this *players) Range(fn func(*session.Player) bool) {
+func (this *players) Range(fn func(*session.Data) bool) {
 	this.Map.Range(func(k, v interface{}) bool {
-		if p, ok := v.(*session.Player); ok {
+		if p, ok := v.(*session.Data); ok {
 			return fn(p)
 		}
 		return true
 	})
 }
 
-func (this *players) Delete(p *session.Player) bool {
+func (this *players) Delete(p *session.Data) bool {
 	if p == nil {
 		return false
 	}
@@ -75,15 +65,13 @@ func (this *players) Delete(p *session.Player) bool {
 	return true
 }
 
-type loginCallback func(player *session.Player, loaded bool) error
-
-func (this *players) Login(p *session.Player, callback loginCallback) (err error) {
+func (this *players) Login(p *session.Data, callback loginCallback) (err error) {
 	p.Lock()
 	defer p.Unlock()
 	r := p
 	i, loaded := this.Map.LoadOrStore(p.UUID(), p)
 	if loaded {
-		sp, _ := i.(*session.Player)
+		sp, _ := i.(*session.Data)
 		sp.Merge(p)
 		r = sp
 	}
@@ -94,9 +82,9 @@ func (this *players) Login(p *session.Player, callback loginCallback) (err error
 }
 
 // Binding 身份认证绑定socket
-func (this *players) Binding(socket *cosnet.Socket, uuid string, data map[string]any) (r *session.Player, err error) {
-	p := session.NewPlayer(uuid, string(socket.Id()), data)
-	err = this.Login(p, func(player *session.Player, loaded bool) error {
+func (this *players) Binding(socket *cosnet.Socket, uuid string, data map[string]any) (r *session.Data, err error) {
+	p := session.NewData(uuid, string(socket.Id()), data)
+	err = this.Login(p, func(player *session.Data, loaded bool) error {
 		if loaded {
 			this.replace(player, socket)
 			socket.Emit(cosnet.EventTypeReconnected)
@@ -107,5 +95,8 @@ func (this *players) Binding(socket *cosnet.Socket, uuid string, data map[string
 		r = player
 		return nil
 	})
+	if err == nil {
+		socket.Set(r)
+	}
 	return
 }

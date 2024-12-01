@@ -3,23 +3,22 @@ package gate
 import (
 	"github.com/hwcer/cosgo/options"
 	"github.com/hwcer/cosgo/registry"
+	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosrpc/xclient"
-	"github.com/hwcer/cosrpc/xshare"
-	"github.com/hwcer/cosweb/session"
 	"net/url"
 	"strings"
 )
 
-func metadata(raw string) (req, res xshare.Metadata, err error) {
+func metadata(raw string) (req, res options.Metadata, err error) {
 	var query url.Values
 	query, err = url.ParseQuery(raw)
 	if err != nil {
 		return
 	}
 
-	req = make(xshare.Metadata)
-	res = make(xshare.Metadata)
+	req = make(options.Metadata)
+	res = make(options.Metadata)
 	for k, _ := range query {
 		req[k] = query.Get(k)
 	}
@@ -27,7 +26,7 @@ func metadata(raw string) (req, res xshare.Metadata, err error) {
 }
 
 // request rpc转发,返回实际转发的servicePath
-func request(p *session.Player, path string, args []byte, req, res xshare.Metadata, reply any) (err error) {
+func request(p *session.Data, path string, args []byte, req, res options.Metadata, reply any) (err error) {
 	if strings.HasPrefix(path, "/") {
 		path = strings.TrimPrefix(path, "/")
 	}

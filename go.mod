@@ -4,13 +4,28 @@ go 1.22.2
 
 toolchain go1.23.2
 
+replace (
+	github.com/hwcer/cosgo v1.1.0 => ../cosgo
+	github.com/hwcer/cosnet v0.2.1 => ../cosnet
+	github.com/hwcer/cosrpc v0.0.6 => ../cosrpc
+	github.com/hwcer/cosweb v0.1.0 => ../cosweb
+	github.com/hwcer/coswss v0.0.1 => ../coswss
+)
+
 require (
 	github.com/hwcer/cosgo v1.1.0
 	github.com/hwcer/cosnet v0.2.1
 	github.com/hwcer/cosrpc v0.0.6
 	github.com/hwcer/cosweb v0.1.0
 	github.com/hwcer/coswss v0.0.1
-	github.com/soheilhy/cmux v0.1.5
+)
+
+require (
+	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
+	github.com/lufia/plan9stats v0.0.0-20240408141607-282e7b5d6b74 // indirect
+	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
+	github.com/shirou/gopsutil/v3 v3.24.4 // indirect
+	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 )
 
 require (
@@ -33,11 +48,10 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-ping/ping v1.1.0 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
-	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/godzie44/go-uring v0.0.0-20220926161041-69611e8b13d5 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/pprof v0.0.0-20240416155748-26353dc0451f // indirect
+	github.com/google/pprof v0.0.0-20240430035430-e4905b036c4e // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/grandcat/zeroconf v1.0.0 // indirect
@@ -45,11 +59,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/hwcer/logger v0.0.5 // indirect
-	github.com/hwcer/registry v0.0.6 // indirect
-	github.com/hwcer/scc v0.0.7 // indirect
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible // indirect
-	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/juju/ratelimit v1.0.2 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/kavu/go_reuseport v1.5.0 // indirect
@@ -60,26 +70,25 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/miekg/dns v1.1.58 // indirect
+	github.com/miekg/dns v1.1.59 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
-	github.com/onsi/ginkgo/v2 v2.17.1 // indirect
+	github.com/onsi/ginkgo/v2 v2.17.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/quic-go/quic-go v0.42.0 // indirect
+	github.com/quic-go/quic-go v0.43.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rpcxio/libkv v0.5.1 // indirect
-	github.com/rs/cors v1.10.1 // indirect
+	github.com/rs/cors v1.11.0 // indirect
 	github.com/rubyist/circuitbreaker v2.2.1+incompatible // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/smallnest/quick v0.1.0 // indirect
-	github.com/smallnest/rpcx v1.8.26 // indirect
-	github.com/smallnest/statsview v0.0.0-20231119085602-10700f9abec4 // indirect
+	github.com/smallnest/rpcx v1.8.30 // indirect
+	github.com/smallnest/statsview v1.0.1 // indirect
+	github.com/soheilhy/cmux v0.1.5
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect

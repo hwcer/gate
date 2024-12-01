@@ -4,11 +4,11 @@ import (
 	"github.com/hwcer/cosgo/binder"
 	"github.com/hwcer/cosgo/logger"
 	"github.com/hwcer/cosgo/options"
+	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosgo/values"
-	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/cosweb"
 	"github.com/hwcer/cosweb/middleware"
-	"github.com/hwcer/cosweb/session"
+	"github.com/hwcer/gate/players"
 	"net"
 	"net/http"
 	"strings"
@@ -27,12 +27,19 @@ func init() {
 
 type server struct {
 	*cosweb.Server
+	redis any //是否使用redis存储session信息
 }
 
-func (this *server) init() error {
-	if err := session.Start(nil); err != nil {
+func (this *server) init() (err error) {
+	if this.redis != nil {
+		session.Options.Storage, err = session.NewRedis(this.redis)
+	} else {
+		session.Options.Storage = session.NewMemory()
+	}
+	if err != nil {
 		return err
 	}
+
 	//跨域
 	access := middleware.NewAccessControlAllow()
 	access.Origin("*")
@@ -96,7 +103,7 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 		return c.JSON(values.Parse(err))
 	}
 
-	var p *session.Player
+	var p *session.Data
 	path := Formatter(c.Request.URL.Path)
 	limit := options.Apis.Get(path)
 	if limit != options.ApisTypeNone {
@@ -107,7 +114,7 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 		if err = c.Session.Verify(token); err != nil {
 			return c.JSON(values.Parse(err))
 		}
-		p = c.Session.Player
+		p = c.Session.Data
 		if p == nil {
 			return c.JSON(values.Error("not login"))
 		}
@@ -131,25 +138,19 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 	return Writer(c, reply, cookie)
 }
 
-func (this *server) setCookie(c *cosweb.Context, cookie xshare.Metadata) (r *http.Cookie, err error) {
+func (this *server) setCookie(c *cosweb.Context, cookie options.Metadata) (r *http.Cookie, err error) {
 	if len(cookie) == 0 {
 		return
 	}
-	vs := values.Values{}
-	for k, v := range cookie {
-		if k != options.ServiceMetadataGUID {
-			vs[k] = v
+	if guid, ok := cookie[options.ServicePlayerOAuth]; ok {
+		if r, err = this.login(c, guid, CookiesFilter(cookie)); err == nil {
+			err = players.Login(c.Session.Data, nil)
 		}
-	}
-	if guid, ok := cookie[options.ServiceMetadataGUID]; ok {
-		if guid == "" {
-			Players.Delete(c.Session.Player)
-			err = c.Session.Delete()
-		} else if r, err = this.login(c, guid, vs); err == nil {
-			err = Players.Login(c.Session.Player, nil)
-		}
-	} else if c.Session.Player != nil {
-		c.Session.Player.Update(vs)
+	} else if _, ok = cookie[options.ServicePlayerLogout]; ok {
+		players.Delete(c.Session.Data)
+		err = c.Session.Delete()
+	} else if c.Session.Data != nil {
+		CookiesUpdate(cookie, c.Session.Data)
 	}
 	return
 }

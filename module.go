@@ -16,7 +16,7 @@ import (
 
 var mod = &Module{Module: cosgo.Module{Id: options.ServiceTypeGate}}
 
-func New() cosgo.IModule {
+func New() *Module {
 	return mod
 }
 
@@ -40,22 +40,11 @@ func (this *Module) Init() (err error) {
 	} else if options.Gate.Address[0:i] == "" {
 		options.Gate.Address = "0.0.0.0" + options.Gate.Address
 	}
-
-	if options.Gate.Broadcast == 1 {
-		s := xclient.Service(options.ServiceTypeGate)
-		if err = s.Merge(Service()); err != nil {
-			return err
-		}
-	} else if options.Gate.Broadcast == 2 {
-		service := xserver.Service(options.ServiceTypeGate)
-		if err = service.Merge(Service()); err != nil {
-			return
-		}
+	if options.Rpcx.Redis != "" {
 		if err = xserver.Start(); err != nil {
 			return err
 		}
 	}
-
 	if err = xclient.Start(); err != nil {
 		return err
 	}
@@ -117,12 +106,11 @@ func (this *Module) Start() (err error) {
 func (this *Module) Close() (err error) {
 	if this.mux != nil {
 		_ = this.Socket.Close()
-		_ = this.Server.Close()
 		this.mux.Close()
 	} else if options.Gate.Protocol.Has(options.ProtocolTypeTCP) {
 		err = this.Socket.Close()
 	} else if options.Gate.Protocol.Has(options.ProtocolTypeHTTP) {
-		err = this.Server.Close()
+		//err = this.Server.Close()
 	}
 	if err != nil {
 		return err
@@ -130,7 +118,7 @@ func (this *Module) Close() (err error) {
 	if err = xclient.Close(); err != nil {
 		return
 	}
-	if options.Gate.Broadcast == 2 {
+	if options.Rpcx.Redis != "" {
 		err = xserver.Close()
 	}
 	return
