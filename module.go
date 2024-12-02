@@ -2,7 +2,6 @@ package gate
 
 import (
 	"errors"
-	"github.com/hwcer/cosgo"
 	"github.com/hwcer/cosgo/options"
 	"github.com/hwcer/cosgo/scc"
 	"github.com/hwcer/cosrpc/xclient"
@@ -14,18 +13,21 @@ import (
 	"time"
 )
 
-var mod = &Module{Module: cosgo.Module{Id: options.ServiceTypeGate}}
+var mod = &Module{}
 
 func New() *Module {
 	return mod
 }
 
 type Module struct {
-	cosgo.Module
 	mux       cmux.CMux
 	Server    *server
 	Socket    *socket
 	WebSocket *coswss.Server
+}
+
+func (this *Module) Id() string {
+	return options.ServiceTypeGate
 }
 
 func (this *Module) Init() (err error) {
