@@ -15,9 +15,9 @@ func (this *Room) Has(v *session.Data) bool {
 	return ok
 }
 
-func (this *Room) Join(d *session.Data) {
+func (this *Room) Join(d *session.Data) bool {
 	if this.Has(d) {
-		return
+		return false
 	}
 	this.locker.Lock()
 	defer this.locker.Unlock()
@@ -27,15 +27,17 @@ func (this *Room) Join(d *session.Data) {
 	}
 	ps[d.UUID()] = d
 	this.ps = ps
+	return true
 }
 
-func (this *Room) Leave(d *session.Data) {
+func (this *Room) Leave(d *session.Data) bool {
 	if !this.Has(d) {
-		return
+		return false
 	}
 	this.locker.Lock()
 	defer this.locker.Unlock()
 	delete(this.ps, d.UUID())
+	return true
 }
 
 func (this *Room) Range(f func(*session.Data) bool) {

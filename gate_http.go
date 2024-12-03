@@ -20,17 +20,16 @@ var Method = []string{"POST", "GET", "OPTIONS"}
 //var ServiceProxyRoute = map[string]string{}
 
 func init() {
-	mod.Server = &server{}
-	mod.Server.Server = cosweb.New()
 	session.Options.Name = "_cookie_vars"
 }
 
-type server struct {
+type Server struct {
 	*cosweb.Server
 	redis any //是否使用redis存储session信息
 }
 
-func (this *server) init() (err error) {
+func (this *Server) init() (err error) {
+	this.Server = cosweb.New()
 	if this.redis != nil {
 		session.Options.Storage, err = session.NewRedis(this.redis)
 	} else {
@@ -51,27 +50,21 @@ func (this *server) init() (err error) {
 	return nil
 }
 
-func (this *server) Start(address string) (err error) {
-	if err = this.init(); err != nil {
-		return
-	}
-	if err = this.Server.Start(address); err == nil {
+func (this *Server) Listen(address string) (err error) {
+	if err = this.Server.Listen(address); err == nil {
 		logger.Trace("网关短连接启动：%v", options.Gate.Address)
 	}
 	return
 }
-func (this *server) Listen(ln net.Listener) (err error) {
-	if err = this.init(); err != nil {
-		return
-	}
-	if err = this.Server.Listen(ln); err == nil {
+func (this *Server) Accept(ln net.Listener) (err error) {
+	if err = this.Server.Accept(ln); err == nil {
 		logger.Trace("网关短连接启动：%v", options.Gate.Address)
 	}
 	return
 }
 
 // Login 登录
-func (this *server) login(c *cosweb.Context, uuid string, data map[string]any) (cookie *http.Cookie, err error) {
+func (this *Server) login(c *cosweb.Context, uuid string, data map[string]any) (cookie *http.Cookie, err error) {
 	cookie = &http.Cookie{Name: session.Options.Name, Path: "/"}
 	if cookie.Value, err = c.Session.Create(uuid, data); err == nil {
 		http.SetCookie(c.Response, cookie)
@@ -81,7 +74,7 @@ func (this *server) login(c *cosweb.Context, uuid string, data map[string]any) (
 	return
 }
 
-func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
+func (this *Server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = values.Errorf(0, r)
@@ -138,7 +131,7 @@ func (this *server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 	return Writer(c, reply, cookie)
 }
 
-func (this *server) setCookie(c *cosweb.Context, cookie options.Metadata) (r *http.Cookie, err error) {
+func (this *Server) setCookie(c *cosweb.Context, cookie options.Metadata) (r *http.Cookie, err error) {
 	if len(cookie) == 0 {
 		return
 	}

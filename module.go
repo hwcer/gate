@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/hwcer/cosgo/options"
 	"github.com/hwcer/cosgo/scc"
+	"github.com/hwcer/cosnet"
 	"github.com/hwcer/cosrpc/xclient"
 	"github.com/hwcer/cosrpc/xserver"
 	"github.com/hwcer/coswss"
@@ -21,8 +22,8 @@ func New() *Module {
 
 type Module struct {
 	mux       cmux.CMux
-	Server    *server
-	Socket    *socket
+	Socket    *Socket
+	Server    *Server
 	WebSocket *coswss.Server
 }
 
@@ -65,19 +66,29 @@ func (this *Module) Start() (err error) {
 	p := options.Gate.Protocol
 	// websocket
 	if p.Has(options.ProtocolTypeWSS) {
-		this.WebSocket, err = coswss.New(this.Socket.Server)
-		this.WebSocket.Binding(this.Server.Server, options.Options.Gate.Websocket)
-		//this.Server.Server.Register(options.Options.Gate.Websocket, this.WebSocket.Handle)
+		this.WebSocket = coswss.New()
 		this.WebSocket.Verify = WSVerify
 		this.WebSocket.Accept = WSAccept
+		if p.Has(options.ProtocolTypeHTTP) {
+			this.WebSocket.Binding(this.Server.Server, options.Options.Gate.Websocket)
+		} else {
+			err = this.WebSocket.Start(options.Gate.Address)
+		}
+		if err != nil {
+			return err
+		}
 	}
 	//SOCKET
 	if p.Has(options.ProtocolTypeTCP) {
+		this.Socket = &Socket{}
+		if err = this.Socket.init(); err != nil {
+			return err
+		}
 		if this.mux != nil {
-			so := this.mux.Match(this.Socket.Matcher())
-			err = this.Socket.Listen(so)
+			so := this.mux.Match(cosnet.Matcher)
+			err = this.Socket.Accept(so)
 		} else {
-			err = this.Socket.Start(options.Gate.Address)
+			err = this.Socket.Listen(options.Gate.Address)
 		}
 		if err != nil {
 			return err
@@ -85,11 +96,15 @@ func (this *Module) Start() (err error) {
 	}
 
 	if p.Has(options.ProtocolTypeHTTP) || p.Has(options.ProtocolTypeWSS) {
+		this.Server = &Server{}
+		if err = this.Server.init(); err != nil {
+			return err
+		}
 		if this.mux != nil {
 			so := this.mux.Match(cmux.HTTP1Fast())
-			err = this.Server.Listen(so)
+			err = this.Server.Accept(so)
 		} else {
-			err = this.Server.Start(options.Gate.Address)
+			err = this.Server.Listen(options.Gate.Address)
 		}
 		if err != nil {
 			return err
@@ -97,25 +112,20 @@ func (this *Module) Start() (err error) {
 	}
 
 	if this.mux != nil {
-		if err = scc.Timeout(time.Second, func() error { return this.mux.Serve() }); errors.Is(err, scc.ErrorTimeout) {
+		err = scc.Timeout(time.Second, func() error { return this.mux.Serve() })
+		if errors.Is(err, scc.ErrorTimeout) {
 			err = nil
 		}
 	}
 
 	return err
 }
-
+func (this *Module) Reload() error {
+	return nil
+}
 func (this *Module) Close() (err error) {
 	if this.mux != nil {
-		_ = this.Socket.Close()
 		this.mux.Close()
-	} else if options.Gate.Protocol.Has(options.ProtocolTypeTCP) {
-		err = this.Socket.Close()
-	} else if options.Gate.Protocol.Has(options.ProtocolTypeHTTP) {
-		//err = this.Server.Close()
-	}
-	if err != nil {
-		return err
 	}
 	if err = xclient.Close(); err != nil {
 		return

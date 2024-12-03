@@ -23,7 +23,8 @@ func (this *players) replace(p *session.Data, socket *cosnet.Socket) {
 	if old == nil || old.Id() == socket.Id() {
 		return
 	}
-	if !old.Status.Disabled() {
+	status := old.GetStatus()
+	if !status.Disabled() {
 		old.Emit(cosnet.EventTypeReplaced)
 		old.Close()
 	}
@@ -83,20 +84,19 @@ func (this *players) Login(p *session.Data, callback loginCallback) (err error) 
 
 // Binding 身份认证绑定socket
 func (this *players) Binding(socket *cosnet.Socket, uuid string, data map[string]any) (r *session.Data, err error) {
-	p := session.NewData(uuid, string(socket.Id()), data)
+	p := session.NewData(uuid, "", data)
 	err = this.Login(p, func(player *session.Data, loaded bool) error {
 		if loaded {
 			this.replace(player, socket)
 			socket.Emit(cosnet.EventTypeReconnected)
 		} else {
 			player.Set(SessionPlayerSocketName, socket)
-			socket.Emit(cosnet.EventTypeConnected)
 		}
 		r = player
 		return nil
 	})
 	if err == nil {
-		socket.Set(r)
+		socket.OAuth(r)
 	}
 	return
 }
