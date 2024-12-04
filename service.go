@@ -3,12 +3,12 @@ package gate
 import (
 	"fmt"
 	"github.com/hwcer/cosgo/logger"
-	"github.com/hwcer/cosgo/options"
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosrpc/xserver"
 	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/gate/players"
 	"github.com/hwcer/gate/rooms"
+	"github.com/hwcer/wower/options"
 	"strings"
 )
 

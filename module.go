@@ -2,12 +2,12 @@ package gate
 
 import (
 	"errors"
-	"github.com/hwcer/cosgo/options"
 	"github.com/hwcer/cosgo/scc"
 	"github.com/hwcer/cosnet"
 	"github.com/hwcer/cosrpc/xclient"
 	"github.com/hwcer/cosrpc/xserver"
 	"github.com/hwcer/coswss"
+	"github.com/hwcer/wower/options"
 	"github.com/soheilhy/cmux"
 	"net"
 	"strings"

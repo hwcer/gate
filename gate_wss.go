@@ -1,11 +1,11 @@
 package gate
 
 import (
-	"github.com/hwcer/cosgo/options"
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosnet"
 	"github.com/hwcer/gate/players"
+	"github.com/hwcer/wower/options"
 	"net/http"
 )
 

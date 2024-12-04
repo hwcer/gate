@@ -1,10 +1,10 @@
 package rooms
 
 import (
-	"github.com/hwcer/cosgo/options"
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/gate/players"
+	"github.com/hwcer/wower/options"
 	"strings"
 	"sync"
 )

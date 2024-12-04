@@ -3,12 +3,13 @@ package gate
 import (
 	"github.com/hwcer/cosgo/binder"
 	"github.com/hwcer/cosgo/logger"
-	"github.com/hwcer/cosgo/options"
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosweb"
 	"github.com/hwcer/cosweb/middleware"
 	"github.com/hwcer/gate/players"
+	"github.com/hwcer/wower/options"
+	"github.com/hwcer/wower/share"
 	"net"
 	"net/http"
 	"strings"
@@ -98,8 +99,8 @@ func (this *Server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 
 	var p *session.Data
 	path := Formatter(c.Request.URL.Path)
-	limit := options.Apis.Get(path)
-	if limit != options.ApisTypeNone {
+	limit := share.Authorizes.Get(path)
+	if limit != share.AuthorizesTypeNone {
 		token := c.GetString(session.Options.Name, cosweb.RequestDataTypeCookie, cosweb.RequestDataTypeQuery, cosweb.RequestDataTypeHeader)
 		if token == "" {
 			return c.JSON(values.Error("token empty"))
@@ -111,7 +112,7 @@ func (this *Server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 		if p == nil {
 			return c.JSON(values.Error("not login"))
 		}
-		if limit == options.ApisTypeOAuth {
+		if limit == share.AuthorizesTypeOAuth {
 			req[options.ServiceMetadataGUID] = p.UUID()
 		} else {
 			req[options.ServiceMetadataUID] = p.GetString(options.ServiceMetadataUID)

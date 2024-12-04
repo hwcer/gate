@@ -3,11 +3,12 @@ package gate
 import (
 	"errors"
 	"github.com/hwcer/cosgo/logger"
-	"github.com/hwcer/cosgo/options"
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosnet"
 	"github.com/hwcer/cosnet/tcp"
 	"github.com/hwcer/gate/players"
+	"github.com/hwcer/wower/options"
+	"github.com/hwcer/wower/share"
 	"net"
 	"net/url"
 	"strconv"
@@ -73,13 +74,13 @@ func (this *Socket) proxy(c *cosnet.Context) interface{} {
 	var p *session.Data
 	//p, _ := c.Socket.Get().(*session.Data)
 	path := Formatter(urlPath.Path)
-	limit := options.Apis.Get(path)
-	if limit != options.ApisTypeNone {
+	limit := share.Authorizes.Get(path)
+	if limit != share.AuthorizesTypeNone {
 		if c.Socket.GetStatus() != cosnet.StatusTypeOAuth {
 			return c.Errorf(0, "not login")
 		}
 		p = c.Socket.Data()
-		if limit == options.ApisTypeOAuth {
+		if limit == share.AuthorizesTypeOAuth {
 			req[options.ServiceMetadataGUID] = p.GetString(options.ServiceMetadataGUID)
 		} else {
 			req[options.ServiceMetadataUID] = p.GetString(options.ServiceMetadataUID)

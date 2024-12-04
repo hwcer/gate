@@ -1,10 +1,10 @@
 package gate
 
 import (
-	"github.com/hwcer/cosgo/options"
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/gate/rooms"
+	"github.com/hwcer/wower/options"
 	"strings"
 )
 
