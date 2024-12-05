@@ -4,7 +4,9 @@ import (
 	"github.com/hwcer/cosgo/registry"
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosgo/values"
+	"github.com/hwcer/cosrpc/inprocess"
 	"github.com/hwcer/cosrpc/xclient"
+	"github.com/hwcer/cosrpc/xserver"
 	"github.com/hwcer/wower/options"
 	"net/url"
 	"strings"
@@ -39,6 +41,11 @@ func request(p *session.Data, path string, args []byte, req, res options.Metadat
 	if options.Gate.Prefix != "" {
 		serviceMethod = registry.Join(options.Gate.Prefix, serviceMethod)
 	}
+	//内部调用
+	if _, ok := xserver.Default.Registry.Match(servicePath, serviceMethod); ok {
+		return inprocess.CallWithMetadata(req, res, servicePath, serviceMethod, args, reply)
+	}
+
 	if p != nil {
 		if serviceAddress := p.GetString(options.GetServiceSelectorAddress(servicePath)); serviceAddress != "" {
 			req.SetAddress(serviceAddress)
