@@ -6,6 +6,7 @@ import (
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosnet"
 	"github.com/hwcer/cosnet/tcp"
+	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/gate/players"
 	"github.com/hwcer/wower/options"
 	"github.com/hwcer/wower/share"
@@ -107,7 +108,7 @@ func (this *Socket) proxy(c *cosnet.Context) interface{} {
 	return reply
 }
 
-func (this *Socket) setCookie(c *cosnet.Context, cookie options.Metadata) (err error) {
+func (this *Socket) setCookie(c *cosnet.Context, cookie xshare.Metadata) (err error) {
 	if len(cookie) == 0 {
 		return
 	}

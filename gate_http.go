@@ -5,6 +5,7 @@ import (
 	"github.com/hwcer/cosgo/logger"
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosgo/values"
+	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/cosweb"
 	"github.com/hwcer/cosweb/middleware"
 	"github.com/hwcer/gate/players"
@@ -132,7 +133,7 @@ func (this *Server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 	return Writer(c, reply, cookie)
 }
 
-func (this *Server) setCookie(c *cosweb.Context, cookie options.Metadata) (r *http.Cookie, err error) {
+func (this *Server) setCookie(c *cosweb.Context, cookie xshare.Metadata) (r *http.Cookie, err error) {
 	if len(cookie) == 0 {
 		return
 	}

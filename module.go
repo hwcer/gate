@@ -3,6 +3,7 @@ package gate
 import (
 	"errors"
 	"github.com/hwcer/cosgo/scc"
+	"github.com/hwcer/cosgo/utils"
 	"github.com/hwcer/cosnet"
 	"github.com/hwcer/cosrpc/xclient"
 	"github.com/hwcer/cosrpc/xserver"
@@ -43,10 +44,8 @@ func (this *Module) Init() (err error) {
 	} else if options.Gate.Address[0:i] == "" {
 		options.Gate.Address = "0.0.0.0" + options.Gate.Address
 	}
-	if options.Rpcx.Redis != "" {
-		if err = xserver.Start(); err != nil {
-			return err
-		}
+	if err = xserver.Start(); err != nil {
+		return err
 	}
 	if err = xclient.Start(); err != nil {
 		return err
@@ -127,11 +126,6 @@ func (this *Module) Close() (err error) {
 	if this.mux != nil {
 		this.mux.Close()
 	}
-	if err = xclient.Close(); err != nil {
-		return
-	}
-	if options.Rpcx.Redis != "" {
-		err = xserver.Close()
-	}
-	return
+	return utils.Assert(xclient.Close, xserver.Close)
+
 }

@@ -4,23 +4,22 @@ import (
 	"github.com/hwcer/cosgo/registry"
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosgo/values"
-	"github.com/hwcer/cosrpc/inprocess"
 	"github.com/hwcer/cosrpc/xclient"
-	"github.com/hwcer/cosrpc/xserver"
+	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/wower/options"
 	"net/url"
 	"strings"
 )
 
-func metadata(raw string) (req, res options.Metadata, err error) {
+func metadata(raw string) (req, res xshare.Metadata, err error) {
 	var query url.Values
 	query, err = url.ParseQuery(raw)
 	if err != nil {
 		return
 	}
 
-	req = make(options.Metadata)
-	res = make(options.Metadata)
+	req = make(xshare.Metadata)
+	res = make(xshare.Metadata)
 	for k, _ := range query {
 		req[k] = query.Get(k)
 	}
@@ -28,7 +27,7 @@ func metadata(raw string) (req, res options.Metadata, err error) {
 }
 
 // request rpc转发,返回实际转发的servicePath
-func request(p *session.Data, path string, args []byte, req, res options.Metadata, reply any) (err error) {
+func request(p *session.Data, path string, args []byte, req, res xshare.Metadata, reply any) (err error) {
 	if strings.HasPrefix(path, "/") {
 		path = strings.TrimPrefix(path, "/")
 	}
@@ -41,11 +40,6 @@ func request(p *session.Data, path string, args []byte, req, res options.Metadat
 	if options.Gate.Prefix != "" {
 		serviceMethod = registry.Join(options.Gate.Prefix, serviceMethod)
 	}
-	//内部调用
-	if _, ok := xserver.Default.Registry.Match(servicePath, serviceMethod); ok {
-		return inprocess.CallWithMetadata(req, res, servicePath, serviceMethod, args, reply)
-	}
-
 	if p != nil {
 		if serviceAddress := p.GetString(options.GetServiceSelectorAddress(servicePath)); serviceAddress != "" {
 			req.SetAddress(serviceAddress)
