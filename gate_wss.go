@@ -1,37 +1,53 @@
 package gate
 
 import (
-	"github.com/hwcer/cosgo/session"
-	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosnet"
+	"github.com/hwcer/cosrpc/xshare"
+	"github.com/hwcer/coswss"
 	"github.com/hwcer/gate/players"
 	"github.com/hwcer/wower/options"
 	"net/http"
 )
 
-func WSVerify(w http.ResponseWriter, r *http.Request) (uuid string, err error) {
+func init() {
+	coswss.Options.Verify = WSVerify
+	coswss.Options.Accept = WSAccept
+}
+
+func WSVerify(w http.ResponseWriter, r *http.Request) (meta map[string]string, err error) {
 	//logger.Trace("Sec-Websocket-Extensions:%v", r.Header.Get("Sec-Websocket-Extensions"))
 	//logger.Trace("Sec-Websocket-Key:%v", r.Header.Get("Sec-Websocket-Key"))
 	//logger.Trace("Sec-Websocket-Protocol:%v", r.Header.Get("Sec-Websocket-Protocol"))
 	//logger.Trace("Sec-Websocket-Branch:%v", r.Header.Get("Sec-Websocket-Branch"))
-	if !options.Gate.WSVerify {
-		return "", nil
-	}
 	token := r.Header.Get("Sec-Websocket-Protocol")
-	if token == "" {
-		return "", values.Error("token empty")
+	if token == "" || len(token) < 2 {
+		//return nil, values.Error("token empty")
+		return nil, nil
 	}
-	sess := session.New()
-	if err = sess.Verify(token); err != nil {
-		return "", values.Parse(err)
+	req := xshare.NewMetadata()
+	res := xshare.NewMetadata()
+	reply := make([]byte, 0)
+
+	err = request(nil, options.Gate.Login, []byte{}, req, res, &reply)
+	if err != nil {
+		return nil, err
 	}
-	uuid = sess.UUID()
-	return
+
+	//sess := session.New()
+	//if err = sess.Verify(token); err != nil {
+	//	return "", values.Parse(err)
+	//}
+	//uuid = res[options.ServiceMetadataGUID]
+	return res, nil
 }
-func WSAccept(s *cosnet.Socket, uuid string) {
-	if !options.Options.Gate.WSVerify {
+func WSAccept(s *cosnet.Socket, meta map[string]string) {
+	if len(meta) == 0 {
 		return
 	}
-	_, _ = players.Players.Binding(s, uuid, nil)
+	uuid, ok := meta[options.ServiceMetadataGUID]
+	if !ok {
+		return
+	}
+	_, _ = players.Players.Binding(s, uuid, CookiesFilter(meta))
 	return
 }

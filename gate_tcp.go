@@ -5,6 +5,7 @@ import (
 	"github.com/hwcer/cosgo/logger"
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosnet"
+	"github.com/hwcer/cosnet/message"
 	"github.com/hwcer/cosnet/tcp"
 	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/gate/players"
@@ -20,12 +21,17 @@ type Socket struct {
 }
 
 func (this *Socket) init() error {
+	if !cosnet.Start() {
+		return nil
+	}
 	service := cosnet.Service("")
 	_ = service.Register(this.proxy, "/*")
 	cosnet.On(cosnet.EventTypeError, this.Errorf)
+	cosnet.On(cosnet.EventTypeMessage, this.Message)
 	cosnet.On(cosnet.EventTypeConnected, this.Connected)
 	cosnet.On(cosnet.EventTypeDisconnect, this.Disconnect)
 	cosnet.On(cosnet.EventTypeReleased, this.Destroyed)
+
 	return nil
 }
 
@@ -82,7 +88,7 @@ func (this *Socket) proxy(c *cosnet.Context) interface{} {
 		}
 		p = c.Socket.Data()
 		if limit == share.AuthorizesTypeOAuth {
-			req[options.ServiceMetadataGUID] = p.GetString(options.ServiceMetadataGUID)
+			req[options.ServiceMetadataGUID] = p.UUID()
 		} else {
 			req[options.ServiceMetadataUID] = p.GetString(options.ServiceMetadataUID)
 		}
@@ -150,4 +156,9 @@ func (this *Socket) Destroyed(sock *cosnet.Socket, _ interface{}) bool {
 		//_ = share.Notify.Publish(share.NotifyChannelSocketDestroyed, uid)
 	}
 	return true
+}
+func (this *Socket) Message(sock *cosnet.Socket, msg any) bool {
+	m := msg.(message.Message)
+	logger.Debug("未知消息 Path:%v  Body:%v", m.Path(), string(m.Body()))
+	return false
 }

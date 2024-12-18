@@ -19,7 +19,7 @@ type players struct {
 // replace 顶号
 func (this *players) replace(p *session.Data, socket *cosnet.Socket) {
 	old := this.Socket(p)
-	p.Set(SessionPlayerSocketName, socket)
+	p.Set(SessionPlayerSocketName, socket, true)
 	if old == nil || old.Id() == socket.Id() {
 		return
 	}
@@ -90,7 +90,7 @@ func (this *players) Binding(socket *cosnet.Socket, uuid string, data map[string
 			this.replace(player, socket)
 			socket.Emit(cosnet.EventTypeReconnected)
 		} else {
-			player.Set(SessionPlayerSocketName, socket)
+			player.Set(SessionPlayerSocketName, socket, true)
 		}
 		r = player
 		return nil
