@@ -1,18 +1,16 @@
 package gate
 
 import (
-	"github.com/hwcer/cosgo/binder"
 	"github.com/hwcer/cosgo/logger"
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosgo/values"
-	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/cosweb"
 	"github.com/hwcer/cosweb/middleware"
 	"github.com/hwcer/gate/players"
 	"github.com/hwcer/wower/options"
-	"github.com/hwcer/wower/share"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -63,88 +61,65 @@ func (this *Server) Accept(ln net.Listener) (err error) {
 	return
 }
 
-// Login 登录
-func (this *Server) login(c *cosweb.Context, uuid string, data map[string]any) (cookie *http.Cookie, err error) {
-	cookie = &http.Cookie{Name: session.Options.Name, Path: "/"}
-	if cookie.Value, err = c.Session.Create(uuid, data); err == nil {
-		http.SetCookie(c.Response, cookie)
-	}
-	c.Header().Set("X-Forwarded-Key", session.Options.Name)
-	c.Header().Set("X-Forwarded-Val", cookie.Value)
-	return
-}
-
 func (this *Server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = values.Errorf(0, r)
 		}
 	}()
-	body, err := c.Buffer()
-	if err != nil {
-		return err
-	}
 	startTime := time.Now()
 	defer func() {
 		if elapsed := time.Since(startTime); elapsed > elapsedMillisecond {
-			logger.Debug("发现高延时请求,TIME:%v,PATH:%v,BODY:%v", elapsed, c.Request.URL.Path, string(body.Bytes()))
+			buff, _ := c.Buffer()
+			logger.Debug("发现高延时请求,TIME:%v,PATH:%v,BODY:%v", elapsed, c.Request.URL.Path, string(buff.Bytes()))
 		}
 	}()
-
-	req, res, err := metadata(c.Request.URL.RawQuery)
+	h := &httpProxy{Context: c}
+	reply, err := proxy(h)
 	if err != nil {
 		return c.JSON(values.Parse(err))
+	} else {
+		return c.Bytes(cosweb.ContentTypeApplicationJSON, reply)
 	}
-
-	var p *session.Data
-	path := Formatter(c.Request.URL.Path)
-	limit := share.Authorizes.Get(path)
-	if limit != share.AuthorizesTypeNone {
-		token := c.GetString(session.Options.Name, cosweb.RequestDataTypeCookie, cosweb.RequestDataTypeQuery, cosweb.RequestDataTypeHeader)
-		if token == "" {
-			return c.JSON(values.Error("token empty"))
-		}
-		if err = c.Session.Verify(token); err != nil {
-			return c.JSON(values.Parse(err))
-		}
-		p = c.Session.Data
-		if p == nil {
-			return c.JSON(values.Error("not login"))
-		}
-		p.KeepAlive()
-		if limit == share.AuthorizesTypeOAuth {
-			req[options.ServiceMetadataGUID] = p.UUID()
-		} else {
-			req[options.ServiceMetadataUID] = p.GetString(options.ServiceMetadataUID)
-		}
-	}
-	if ct := c.Binder.String(); ct != binder.Json.String() {
-		req[binder.ContentType] = ct
-	}
-	reply := make([]byte, 0)
-	if err = request(p, path, body.Bytes(), req, res, &reply); err != nil {
-		return c.JSON(values.Parse(err))
-	}
-	var cookie *http.Cookie
-	if cookie, err = this.setCookie(c, res); err != nil {
-		return c.JSON(values.Parse(err))
-	}
-	return Writer(c, reply, cookie)
 }
 
-func (this *Server) setCookie(c *cosweb.Context, cookie xshare.Metadata) (r *http.Cookie, err error) {
-	if len(cookie) == 0 {
-		return
+type httpProxy struct {
+	*cosweb.Context
+}
+
+func (this *httpProxy) Data() (*session.Data, error) {
+	token := this.Context.GetString(session.Options.Name, cosweb.RequestDataTypeCookie, cosweb.RequestDataTypeQuery, cosweb.RequestDataTypeHeader)
+	if token == "" {
+		return nil, values.Error("token empty")
 	}
-	if guid, ok := cookie[options.ServicePlayerOAuth]; ok {
-		if r, err = this.login(c, guid, CookiesFilter(cookie)); err == nil {
-			err = players.Login(c.Session.Data, nil)
-		}
-	} else if _, ok = cookie[options.ServicePlayerLogout]; ok {
-		players.Delete(c.Session.Data)
-		err = c.Session.Delete()
-	} else if c.Session.Data != nil {
-		CookiesUpdate(cookie, c.Session.Data)
+	if err := this.Context.Session.Verify(token); err != nil {
+		return nil, err
 	}
-	return
+	return this.Context.Session.Data, nil
+}
+func (this *httpProxy) Token() string {
+	return this.Context.Session.Token()
+}
+
+func (this *httpProxy) Login(guid string, value values.Values) (err error) {
+	cookie := &http.Cookie{Name: session.Options.Name, Path: "/"}
+	cookie.Value, err = this.Context.Session.Create(guid, value)
+	if err != nil {
+		return err
+	}
+	err = players.Login(this.Context.Session.Data, nil)
+	if err != nil {
+		return err
+	}
+	http.SetCookie(this.Context.Response, cookie)
+	header := this.Header()
+	header.Set("X-Forwarded-Key", session.Options.Name)
+	header.Set("X-Forwarded-Val", cookie.Value)
+	return nil
+}
+func (this *httpProxy) Delete() error {
+	return this.Context.Session.Delete()
+}
+func (this *httpProxy) Query() (*url.URL, error) {
+	return this.Context.Request.URL, nil
 }

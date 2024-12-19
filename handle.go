@@ -1,8 +1,6 @@
 package gate
 
 import (
-	"github.com/hwcer/cosweb"
-	"net/http"
 	"strings"
 	"time"
 )
@@ -14,9 +12,9 @@ var Formatter = func(s string) string {
 	return strings.ToLower(s)
 }
 
-var Writer = func(c *cosweb.Context, reply []byte, cookie *http.Cookie) error {
-	return c.Bytes(cosweb.ContentTypeApplicationJSON, reply)
-}
+//var Writer = func(c *cosweb.Context, reply []byte, cookie *http.Cookie) error {
+//	return c.Bytes(cosweb.ContentTypeApplicationJSON, reply)
+//}
 
 /*
 	if cookie != nil {

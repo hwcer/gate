@@ -1,16 +1,15 @@
 package gate
 
 import (
-	"errors"
+	"bytes"
 	"github.com/hwcer/cosgo/logger"
 	"github.com/hwcer/cosgo/session"
+	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosnet"
 	"github.com/hwcer/cosnet/message"
 	"github.com/hwcer/cosnet/tcp"
-	"github.com/hwcer/cosrpc/xshare"
 	"github.com/hwcer/gate/players"
 	"github.com/hwcer/wower/options"
-	"github.com/hwcer/wower/share"
 	"net"
 	"net/url"
 	"strconv"
@@ -32,13 +31,6 @@ func (this *Socket) init() error {
 	cosnet.On(cosnet.EventTypeDisconnect, this.Disconnect)
 	return nil
 }
-
-//var socketSerialize cosnet.HandlerSerialize = func(c *cosnet.Context, reply interface{}) (any, error) {
-//	if v, ok := reply.([]byte); ok && string(v) == "null" {
-//		return nil, nil
-//	}
-//	return reply, nil
-//}
 
 func (this *Socket) Listen(address string) error {
 	_, err := cosnet.Listen(address)
@@ -65,71 +57,15 @@ func (this *Socket) ping(c *cosnet.Context) interface{} {
 }
 
 func (this *Socket) proxy(c *cosnet.Context) interface{} {
-	urlPath, err := url.Parse(c.Path())
+	h := &socketProxy{Context: c}
+	reply, err := proxy(h)
 	if err != nil {
 		return c.Errorf(0, err)
-	}
-
-	//logger.Trace("Socket request,PATH:%v   BODY:%v", urlPath.String(), string(c.Message.Body()))
-	req, res, err := metadata(urlPath.RawQuery)
-	if err != nil {
-		return c.Errorf(0, err)
-	}
-	var p *session.Data
-	//p, _ := c.Socket.Get().(*session.Data)
-	path := Formatter(urlPath.Path)
-	limit := share.Authorizes.Get(path)
-	if limit != share.AuthorizesTypeNone {
-		if c.Socket.Data() == nil {
-			return c.Errorf(0, "not login")
-		}
-		p = c.Socket.Data()
-		p.KeepAlive()
-		if limit == share.AuthorizesTypeOAuth {
-			req[options.ServiceMetadataGUID] = p.UUID()
-		} else {
-			req[options.ServiceMetadataUID] = p.GetString(options.ServiceMetadataUID)
-		}
-	}
-
-	reply := make([]byte, 0)
-	if p == nil {
-		err = request(nil, path, c.Message.Body(), req, res, &reply)
-	} else {
-		err = request(p, path, c.Message.Body(), req, res, &reply)
-	}
-	if err != nil {
-		//logger.Trace("Socket response error:%v,PATH:%v   Error:%v", path, err)
-		return err
-	}
-	//logger.Trace("Socket response,PATH:%v   BODY:%v", path, string(reply))
-	if err = this.setCookie(c, res); err != nil {
-		return c.Error(err)
 	}
 	if len(reply) == 0 {
 		return nil
 	}
 	return reply
-}
-
-func (this *Socket) setCookie(c *cosnet.Context, cookie xshare.Metadata) (err error) {
-	if len(cookie) == 0 {
-		return
-	}
-	s := c.Socket.Data()
-	//账号登录
-	if guid, ok := cookie[options.ServicePlayerOAuth]; ok {
-		_, err = players.Binding(c.Socket, guid, CookiesFilter(cookie))
-	} else if _, ok = cookie[options.ServicePlayerLogout]; ok {
-		players.Delete(s)
-		c.Socket.Close()
-	} else if s != nil {
-		CookiesUpdate(cookie, s)
-	} else {
-		return errors.New("not login")
-	}
-
-	return
 }
 
 func (this *Socket) Connected(sock *cosnet.Socket, _ interface{}) {
@@ -140,21 +76,34 @@ func (this *Socket) Disconnect(sock *cosnet.Socket, _ interface{}) {
 	logger.Debug("Disconnect:%v", sock.Id())
 }
 
-//	func (this *Socket) Destroyed(sock *cosnet.Socket, _ interface{})  {
-//		logger.Debug("Destroyed:%v", sock.Id())
-//		p := sock.Data()
-//		if p == nil {
-//			return
-//		}
-//		s := players.Players.Socket(p)
-//		if s != nil && s.Id() == sock.Id() {
-//			players.Players.Delete(p)
-//			//_ = share.Notify.Publish(share.NotifyChannelSocketDestroyed, uid)
-//		}
-//		return
-//	}
-
 func (this *Socket) Message(sock *cosnet.Socket, msg any) {
 	m := msg.(message.Message)
 	logger.Debug("未知消息 Path:%v  Body:%v", m.Path(), string(m.Body()))
+}
+
+type socketProxy struct {
+	*cosnet.Context
+}
+
+func (this *socketProxy) Data() (*session.Data, error) {
+	return this.Context.Socket.Data(), nil
+}
+func (this *socketProxy) Token() string {
+	return strconv.FormatUint(this.Context.Socket.Id(), 32)
+}
+
+func (this *socketProxy) Buffer() (buf *bytes.Buffer, err error) {
+	buff := bytes.NewBuffer(this.Context.Message.Body())
+	return buff, nil
+}
+func (this *socketProxy) Login(guid string, value values.Values) (err error) {
+	_, err = players.Binding(this.Context.Socket, guid, value)
+	return
+}
+func (this *socketProxy) Delete() error {
+	this.Context.Socket.Close()
+	return nil
+}
+func (this *socketProxy) Query() (*url.URL, error) {
+	return url.Parse(this.Context.Path())
 }
