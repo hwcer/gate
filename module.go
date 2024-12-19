@@ -8,6 +8,7 @@ import (
 	"github.com/hwcer/cosrpc/xclient"
 	"github.com/hwcer/cosrpc/xserver"
 	"github.com/hwcer/coswss"
+	"github.com/hwcer/gate/players"
 	"github.com/hwcer/wower/options"
 	"github.com/soheilhy/cmux"
 	"net"
@@ -55,6 +56,7 @@ func (this *Module) Init() (err error) {
 }
 
 func (this *Module) Start() (err error) {
+	players.Start()
 	if options.Gate.Protocol.CMux() {
 		var ln net.Listener
 		if ln, err = net.Listen("tcp", options.Gate.Address); err != nil {
@@ -63,7 +65,6 @@ func (this *Module) Start() (err error) {
 		this.mux = cmux.New(ln)
 	}
 	p := options.Gate.Protocol
-
 	//SOCKET
 	if p.Has(options.ProtocolTypeTCP) {
 		if this.Socket == nil {

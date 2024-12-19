@@ -30,8 +30,6 @@ func (this *Socket) init() error {
 	cosnet.On(cosnet.EventTypeMessage, this.Message)
 	cosnet.On(cosnet.EventTypeConnected, this.Connected)
 	cosnet.On(cosnet.EventTypeDisconnect, this.Disconnect)
-	cosnet.On(cosnet.EventTypeReleased, this.Destroyed)
-
 	return nil
 }
 
@@ -56,9 +54,8 @@ func (this *Socket) Accept(ln net.Listener) error {
 	return nil
 }
 
-func (this *Socket) Errorf(socket *cosnet.Socket, err interface{}) bool {
+func (this *Socket) Errorf(socket *cosnet.Socket, err interface{}) {
 	logger.Alert(err)
-	return false
 }
 
 func (this *Socket) ping(c *cosnet.Context) interface{} {
@@ -83,10 +80,11 @@ func (this *Socket) proxy(c *cosnet.Context) interface{} {
 	path := Formatter(urlPath.Path)
 	limit := share.Authorizes.Get(path)
 	if limit != share.AuthorizesTypeNone {
-		if c.Socket.GetStatus() != cosnet.StatusTypeOAuth {
+		if c.Socket.Data() == nil {
 			return c.Errorf(0, "not login")
 		}
 		p = c.Socket.Data()
+		p.KeepAlive()
 		if limit == share.AuthorizesTypeOAuth {
 			req[options.ServiceMetadataGUID] = p.UUID()
 		} else {
@@ -134,31 +132,29 @@ func (this *Socket) setCookie(c *cosnet.Context, cookie xshare.Metadata) (err er
 	return
 }
 
-func (this *Socket) Connected(sock *cosnet.Socket, _ interface{}) bool {
+func (this *Socket) Connected(sock *cosnet.Socket, _ interface{}) {
 	logger.Debug("Connected:%v", sock.Id())
-	return true
 }
 
-func (this *Socket) Disconnect(sock *cosnet.Socket, _ interface{}) bool {
+func (this *Socket) Disconnect(sock *cosnet.Socket, _ interface{}) {
 	logger.Debug("Disconnect:%v", sock.Id())
-	return true
 }
 
-func (this *Socket) Destroyed(sock *cosnet.Socket, _ interface{}) bool {
-	logger.Debug("Destroyed:%v", sock.Id())
-	p := sock.Data()
-	if p == nil {
-		return true
-	}
-	s := players.Players.Socket(p)
-	if s != nil && s.Id() == sock.Id() {
-		players.Players.Delete(p)
-		//_ = share.Notify.Publish(share.NotifyChannelSocketDestroyed, uid)
-	}
-	return true
-}
-func (this *Socket) Message(sock *cosnet.Socket, msg any) bool {
+//	func (this *Socket) Destroyed(sock *cosnet.Socket, _ interface{})  {
+//		logger.Debug("Destroyed:%v", sock.Id())
+//		p := sock.Data()
+//		if p == nil {
+//			return
+//		}
+//		s := players.Players.Socket(p)
+//		if s != nil && s.Id() == sock.Id() {
+//			players.Players.Delete(p)
+//			//_ = share.Notify.Publish(share.NotifyChannelSocketDestroyed, uid)
+//		}
+//		return
+//	}
+
+func (this *Socket) Message(sock *cosnet.Socket, msg any) {
 	m := msg.(message.Message)
 	logger.Debug("未知消息 Path:%v  Body:%v", m.Path(), string(m.Body()))
-	return false
 }

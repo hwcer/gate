@@ -19,8 +19,6 @@ import (
 
 var Method = []string{"POST", "GET", "OPTIONS"}
 
-//var ServiceProxyRoute = map[string]string{}
-
 func init() {
 	session.Options.Name = "_cookie_vars"
 }
@@ -113,6 +111,7 @@ func (this *Server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 		if p == nil {
 			return c.JSON(values.Error("not login"))
 		}
+		p.KeepAlive()
 		if limit == share.AuthorizesTypeOAuth {
 			req[options.ServiceMetadataGUID] = p.UUID()
 		} else {

@@ -23,11 +23,7 @@ func (this *players) replace(p *session.Data, socket *cosnet.Socket) {
 	if old == nil || old.Id() == socket.Id() {
 		return
 	}
-	status := old.GetStatus()
-	if !status.Disabled() {
-		old.Emit(cosnet.EventTypeReplaced)
-		old.Close()
-	}
+	old.Close()
 	return
 }
 
@@ -88,7 +84,6 @@ func (this *players) Binding(socket *cosnet.Socket, uuid string, data map[string
 	err = this.Login(p, func(player *session.Data, loaded bool) error {
 		if loaded {
 			this.replace(player, socket)
-			socket.Emit(cosnet.EventTypeReconnected)
 		} else {
 			player.Set(SessionPlayerSocketName, socket, true)
 		}
