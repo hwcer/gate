@@ -28,7 +28,7 @@ func WSVerify(w http.ResponseWriter, r *http.Request) (meta map[string]string, e
 	res := xshare.NewMetadata()
 	reply := make([]byte, 0)
 
-	err = request(nil, options.Gate.Login, []byte{}, req, res, &reply)
+	err = request(nil, 0, options.Gate.Login, []byte{}, req, res, &reply)
 	if err != nil {
 		return nil, err
 	}

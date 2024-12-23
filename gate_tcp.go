@@ -88,9 +88,6 @@ type socketProxy struct {
 func (this *socketProxy) Data() (*session.Data, error) {
 	return this.Context.Socket.Data(), nil
 }
-func (this *socketProxy) Token() string {
-	return strconv.FormatUint(this.Context.Socket.Id(), 32)
-}
 
 func (this *socketProxy) Buffer() (buf *bytes.Buffer, err error) {
 	buff := bytes.NewBuffer(this.Context.Message.Body())
@@ -100,10 +97,17 @@ func (this *socketProxy) Login(guid string, value values.Values) (err error) {
 	_, err = players.Binding(this.Context.Socket, guid, value)
 	return
 }
+
+func (this *socketProxy) Index() uint32 {
+	return this.Message.Index()
+}
 func (this *socketProxy) Delete() error {
 	this.Context.Socket.Close()
 	return nil
 }
 func (this *socketProxy) Query() (*url.URL, error) {
 	return url.Parse(this.Context.Path())
+}
+func (this *socketProxy) Session() string {
+	return strconv.FormatUint(this.Context.Socket.Id(), 32)
 }

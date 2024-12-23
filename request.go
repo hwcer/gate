@@ -2,6 +2,7 @@ package gate
 
 import (
 	"bytes"
+	"github.com/hwcer/cosgo/logger"
 	"github.com/hwcer/cosgo/registry"
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosgo/values"
@@ -30,16 +31,16 @@ func metadata(raw string) (req, res xshare.Metadata, err error) {
 }
 
 // request rpc转发,返回实际转发的servicePath
-func request(p *session.Data, path string, args []byte, req, res xshare.Metadata, reply any) (err error) {
+func request(p *session.Data, index uint32, path string, args []byte, req, res xshare.Metadata, reply any) (err error) {
 	if strings.HasPrefix(path, "/") {
 		path = strings.TrimPrefix(path, "/")
 	}
-	index := strings.Index(path, "/")
-	if index < 0 {
+	i := strings.Index(path, "/")
+	if i < 0 {
 		return values.Errorf(404, "page not found")
 	}
-	servicePath := path[0:index]
-	serviceMethod := registry.Formatter(path[index:])
+	servicePath := path[0:i]
+	serviceMethod := registry.Formatter(path[i:])
 	if options.Gate.Prefix != "" {
 		serviceMethod = registry.Join(options.Gate.Prefix, serviceMethod)
 	}
@@ -48,17 +49,19 @@ func request(p *session.Data, path string, args []byte, req, res xshare.Metadata
 			req.SetAddress(serviceAddress)
 		}
 	}
+	req.Set(options.ServiceMetadataRequestId, index)
 	err = xclient.CallWithMetadata(req, res, servicePath, serviceMethod, args, reply)
 	return
 }
 
 type RequestHandle interface {
 	Data() (*session.Data, error)
-	Token() string
 	Query() (*url.URL, error)
+	Index() uint32
 	Login(guid string, cookie values.Values) error
 	Buffer() (buf *bytes.Buffer, err error)
 	Delete() error
+	Session() string //请求身份标识,http(cookie id),socket(socket id)
 }
 
 func proxy(h RequestHandle) ([]byte, error) {
@@ -81,7 +84,7 @@ func proxy(h RequestHandle) ([]byte, error) {
 			return nil, values.Error("not login")
 		}
 		p.KeepAlive()
-		req[options.ServicePlayerSession] = h.Token()
+		req[options.ServicePlayerSession] = h.Session()
 		if limit == share.AuthorizesTypeOAuth {
 			req[options.ServiceMetadataGUID] = p.UUID()
 			req[options.ServicePlayerGateway] = options.Gate.Address
@@ -97,7 +100,8 @@ func proxy(h RequestHandle) ([]byte, error) {
 		return nil, values.Parse(err)
 	}
 	reply := make([]byte, 0)
-	if err = request(p, path, buff.Bytes(), req, res, &reply); err != nil {
+	if err = request(p, h.Index(), path, buff.Bytes(), req, res, &reply); err != nil {
+		logger.Alert("request:%v", err)
 		return nil, values.Parse(err)
 	}
 	if len(res) == 0 {

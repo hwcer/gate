@@ -69,7 +69,10 @@ func (this *players) Login(p *session.Data, callback loginCallback) (err error) 
 	i, loaded := this.Map.LoadOrStore(p.UUID(), p)
 	if loaded {
 		sp, _ := i.(*session.Data)
-		sp.Merge(p)
+		sp.Lock()
+		defer sp.Unlock()
+		sp.Reset()
+		sp.Merge(p, true)
 		r = sp
 	}
 	if callback != nil {

@@ -29,6 +29,7 @@ func Register(i any, prefix ...string) {
 
 func send(c *xshare.Context) any {
 	uid := c.GetMetadata(options.ServiceMetadataUID)
+
 	guid := c.GetMetadata(options.ServiceMetadataGUID)
 	//logger.Debug("推送消息:%v  %v  %v", c.GetMetadata(rpcx.MetadataMessagePath), uid, string(c.Payload()))
 	p := players.Players.Get(guid)
@@ -50,13 +51,15 @@ func send(c *xshare.Context) any {
 		}
 	}
 	CookiesUpdate(mate, p)
+	//rid := c.GetInt32(options.ServiceMetadataRequestId)
+
 	path := c.GetMetadata(options.ServiceMessagePath)
 	if len(path) == 0 {
 		return nil //仅仅设置信息，不需要发送
 	}
 	var err error
 	if sock != nil {
-		err = sock.Send(path, c.Bytes())
+		err = sock.Send(p.Index(), path, c.Bytes())
 	} else {
 		err = fmt.Errorf("用户不在线,消息丢弃:%v", uid)
 	}
@@ -83,7 +86,7 @@ func broadcast(c *xshare.Context) any {
 		}
 		CookiesUpdate(mate, p)
 		if sock := players.Socket(p); sock != nil {
-			_ = sock.Send(path, c.Bytes())
+			_ = sock.Send(0, path, c.Bytes())
 		}
 		return true
 	})
