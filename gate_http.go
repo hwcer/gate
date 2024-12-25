@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -86,6 +85,19 @@ func (this *Server) proxy(c *cosweb.Context, next cosweb.Next) (err error) {
 
 type httpProxy struct {
 	*cosweb.Context
+	uri *url.URL
+}
+
+func (this *httpProxy) Path() (string, error) {
+	return this.Context.Request.URL.Path, nil
+}
+func (this *httpProxy) Query() values.Values {
+	r := make(values.Values)
+	q := this.Context.Request.URL.Query()
+	for k, _ := range q {
+		r[k] = q.Get(k)
+	}
+	return r
 }
 
 func (this *httpProxy) Data() (*session.Data, error) {
@@ -115,21 +127,11 @@ func (this *httpProxy) Login(guid string, value values.Values) (err error) {
 	header.Set("X-Forwarded-Val", cookie.Value)
 	return nil
 }
-func (this *httpProxy) Index() uint32 {
-	q := this.Context.Request.URL.Query()
-	s := q.Get(options.ServiceMetadataRequestId)
-	if s == "" {
-		return 0
-	}
-	i, _ := strconv.ParseUint(s, 10, 32)
-	return uint32(i)
-}
+
 func (this *httpProxy) Delete() error {
 	return this.Context.Session.Delete()
 }
-func (this *httpProxy) Query() (*url.URL, error) {
-	return this.Context.Request.URL, nil
-}
+
 func (this *httpProxy) Session() string {
 	return this.Context.Session.Token()
 }

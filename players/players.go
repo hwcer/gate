@@ -59,6 +59,10 @@ func (this *players) Delete(p *session.Data) bool {
 		return false
 	}
 	this.Map.Delete(p.UUID())
+	sock := this.Socket(p)
+	if sock != nil {
+		sock.Close()
+	}
 	return true
 }
 

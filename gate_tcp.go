@@ -6,12 +6,10 @@ import (
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosgo/values"
 	"github.com/hwcer/cosnet"
-	"github.com/hwcer/cosnet/message"
 	"github.com/hwcer/cosnet/tcp"
 	"github.com/hwcer/gate/players"
 	"github.com/hwcer/wower/options"
 	"net"
-	"net/url"
 	"strconv"
 	"time"
 )
@@ -26,7 +24,6 @@ func (this *Socket) init() error {
 	service := cosnet.Service("")
 	_ = service.Register(this.proxy, "/*")
 	cosnet.On(cosnet.EventTypeError, this.Errorf)
-	cosnet.On(cosnet.EventTypeMessage, this.Message)
 	cosnet.On(cosnet.EventTypeConnected, this.Connected)
 	cosnet.On(cosnet.EventTypeDisconnect, this.Disconnect)
 	return nil
@@ -76,11 +73,6 @@ func (this *Socket) Disconnect(sock *cosnet.Socket, _ interface{}) {
 	logger.Debug("Disconnect:%v", sock.Id())
 }
 
-func (this *Socket) Message(sock *cosnet.Socket, msg any) {
-	m := msg.(message.Message)
-	logger.Debug("未知消息 Path:%v  Body:%v", m.Path(), string(m.Body()))
-}
-
 type socketProxy struct {
 	*cosnet.Context
 }
@@ -88,7 +80,9 @@ type socketProxy struct {
 func (this *socketProxy) Data() (*session.Data, error) {
 	return this.Context.Socket.Data(), nil
 }
-
+func (this *socketProxy) Query() values.Values {
+	return this.Message.Query()
+}
 func (this *socketProxy) Buffer() (buf *bytes.Buffer, err error) {
 	buff := bytes.NewBuffer(this.Context.Message.Body())
 	return buff, nil
@@ -98,16 +92,11 @@ func (this *socketProxy) Login(guid string, value values.Values) (err error) {
 	return
 }
 
-func (this *socketProxy) Index() uint32 {
-	return this.Message.Index()
-}
 func (this *socketProxy) Delete() error {
 	this.Context.Socket.Close()
 	return nil
 }
-func (this *socketProxy) Query() (*url.URL, error) {
-	return url.Parse(this.Context.Path())
-}
+
 func (this *socketProxy) Session() string {
 	return strconv.FormatUint(this.Context.Socket.Id(), 32)
 }

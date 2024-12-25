@@ -1,7 +1,6 @@
 package gate
 
 import (
-	"fmt"
 	"github.com/hwcer/cosgo/logger"
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosrpc/xserver"
@@ -29,7 +28,6 @@ func Register(i any, prefix ...string) {
 
 func send(c *xshare.Context) any {
 	uid := c.GetMetadata(options.ServiceMetadataUID)
-
 	guid := c.GetMetadata(options.ServiceMetadataGUID)
 	//logger.Debug("推送消息:%v  %v  %v", c.GetMetadata(rpcx.MetadataMessagePath), uid, string(c.Payload()))
 	p := players.Players.Get(guid)
@@ -38,32 +36,28 @@ func send(c *xshare.Context) any {
 		logger.Debug("用户不在线,消息丢弃,UID:%v GUID:%v", uid, guid)
 		return nil
 	}
-	if id := p.GetString(options.ServiceMetadataUID); id != uid {
-		return nil
-	}
-	mate := c.Metadata()
-	sock := players.Players.Socket(p)
-
-	if _, ok := mate[options.ServicePlayerLogout]; ok {
-		players.Delete(p)
-		if sock != nil {
-			sock.Close()
+	if uid != "" {
+		if id := p.GetString(options.ServiceMetadataUID); id != uid {
+			logger.Debug("用户UID不匹配,UID:%v GUID:%v", uid, guid)
+			return nil
 		}
 	}
-	CookiesUpdate(mate, p)
-	//rid := c.GetInt32(options.ServiceMetadataRequestId)
 
+	mate := c.Metadata()
+	if _, ok := mate[options.ServicePlayerLogout]; ok {
+		players.Delete(p)
+	}
+	CookiesUpdate(mate, p)
 	path := c.GetMetadata(options.ServiceMessagePath)
 	if len(path) == 0 {
 		return nil //仅仅设置信息，不需要发送
 	}
-	var err error
-	if sock != nil {
-		err = sock.Send(p.Index(), path, c.Bytes())
-	} else {
-		err = fmt.Errorf("用户不在线,消息丢弃:%v", uid)
+	query := Options.Query(p)
+	sock := players.Players.Socket(p)
+	if err := sock.Send(path, query, c.Bytes()); err != nil {
+		return err
 	}
-	return err
+	return nil
 }
 
 func broadcast(c *xshare.Context) any {
@@ -86,7 +80,7 @@ func broadcast(c *xshare.Context) any {
 		}
 		CookiesUpdate(mate, p)
 		if sock := players.Socket(p); sock != nil {
-			_ = sock.Send(0, path, c.Bytes())
+			_ = sock.Send(path, nil, c.Bytes())
 		}
 		return true
 	})

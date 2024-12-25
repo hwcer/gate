@@ -2,7 +2,6 @@ package gate
 
 import (
 	"bytes"
-	"github.com/hwcer/cosgo/logger"
 	"github.com/hwcer/cosgo/registry"
 	"github.com/hwcer/cosgo/session"
 	"github.com/hwcer/cosgo/values"
@@ -31,7 +30,7 @@ func metadata(raw string) (req, res xshare.Metadata, err error) {
 }
 
 // request rpc转发,返回实际转发的servicePath
-func request(p *session.Data, index uint32, path string, args []byte, req, res xshare.Metadata, reply any) (err error) {
+func request(p *session.Data, path string, args []byte, req, res xshare.Metadata, reply any) (err error) {
 	if strings.HasPrefix(path, "/") {
 		path = strings.TrimPrefix(path, "/")
 	}
@@ -49,33 +48,32 @@ func request(p *session.Data, index uint32, path string, args []byte, req, res x
 			req.SetAddress(serviceAddress)
 		}
 	}
-	req.Set(options.ServiceMetadataRequestId, index)
 	err = xclient.CallWithMetadata(req, res, servicePath, serviceMethod, args, reply)
 	return
 }
 
-type RequestHandle interface {
+type Request interface {
+	Path() (string, error)
 	Data() (*session.Data, error)
-	Query() (*url.URL, error)
-	Index() uint32
+	Query() values.Values
 	Login(guid string, cookie values.Values) error
 	Buffer() (buf *bytes.Buffer, err error)
 	Delete() error
 	Session() string //请求身份标识,http(cookie id),socket(socket id)
 }
 
-func proxy(h RequestHandle) ([]byte, error) {
-	uri, err := h.Query()
+func proxy(h Request) ([]byte, error) {
+	path, err := h.Path()
 	if err != nil {
 		return nil, err
 	}
-	req, res, err := metadata(uri.RawQuery)
-	if err != nil {
-		return nil, values.Parse(err)
+	req := make(xshare.Metadata)
+	res := make(xshare.Metadata)
+	q := h.Query()
+	for k, _ := range q {
+		req[k] = q.GetString(k)
 	}
-
 	var p *session.Data
-	path := Formatter(uri.Path)
 	limit := share.Authorizes.Get(path)
 	if limit != share.AuthorizesTypeNone {
 		if p, err = h.Data(); err != nil {
@@ -100,8 +98,7 @@ func proxy(h RequestHandle) ([]byte, error) {
 		return nil, values.Parse(err)
 	}
 	reply := make([]byte, 0)
-	if err = request(p, h.Index(), path, buff.Bytes(), req, res, &reply); err != nil {
-		logger.Alert("request:%v", err)
+	if err = request(p, path, buff.Bytes(), req, res, &reply); err != nil {
 		return nil, values.Parse(err)
 	}
 	if len(res) == 0 {

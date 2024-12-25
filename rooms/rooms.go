@@ -111,7 +111,7 @@ func Broadcast(c *xshare.Context) any {
 		if _, ok := ignoreMap[uid]; ok {
 			socket := players.Socket(p)
 			if socket != nil {
-				_ = socket.Send(0, path, body)
+				_ = socket.Send(path, nil, body)
 			}
 		}
 	}
