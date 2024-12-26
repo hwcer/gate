@@ -59,9 +59,6 @@ func (this *Socket) proxy(c *cosnet.Context) interface{} {
 	if err != nil {
 		return c.Errorf(0, err)
 	}
-	if len(reply) == 0 {
-		return nil
-	}
 	return reply
 }
 
