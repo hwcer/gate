@@ -23,10 +23,10 @@ func New() *Module {
 }
 
 type Module struct {
-	mux       cmux.CMux
-	Socket    *Socket
-	Server    *Server
-	WebSocket *coswss.Server
+	mux    cmux.CMux
+	Socket *Socket
+	Server *Server
+	//WebSocket *coswss.Server
 }
 
 func (this *Module) Id() string {
@@ -84,7 +84,7 @@ func (this *Module) Start() (err error) {
 		}
 	}
 	//http
-	if p.Has(options.ProtocolTypeHTTP) || p.Has(options.ProtocolTypeWSS) {
+	if p.Has(options.ProtocolTypeHTTP) {
 		this.Server = &Server{}
 		if err = this.Server.init(); err != nil {
 			return err
@@ -102,7 +102,6 @@ func (this *Module) Start() (err error) {
 
 	// websocket
 	if p.Has(options.ProtocolTypeWSS) {
-		this.WebSocket = coswss.New()
 		if this.Socket == nil {
 			this.Socket = &Socket{}
 		}
@@ -112,9 +111,9 @@ func (this *Module) Start() (err error) {
 		//this.WebSocket.Verify = WSVerify
 		//this.WebSocket.Accept = WSAccept
 		if p.Has(options.ProtocolTypeHTTP) {
-			this.WebSocket.Binding(this.Server.Server, options.Options.Gate.Websocket)
+			err = coswss.Binding(this.Server.Server, options.Options.Gate.Websocket)
 		} else {
-			err = this.WebSocket.Start(options.Gate.Address)
+			err = coswss.Listen(options.Gate.Address, options.Options.Gate.Websocket)
 		}
 		if err != nil {
 			return err
