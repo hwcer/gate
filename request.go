@@ -82,14 +82,15 @@ func proxy(h Request) ([]byte, error) {
 			return nil, values.Error("not login")
 		}
 		p.KeepAlive()
-		req[options.ServicePlayerSession] = h.Session()
 		if limit == share.AuthorizesTypeOAuth {
 			req[options.ServiceMetadataGUID] = p.UUID()
-			req[options.ServicePlayerGateway] = options.Gate.Address
+			req[options.ServicePlayerSession] = h.Session()
 		} else {
 			req[options.ServiceMetadataUID] = p.GetString(options.ServiceMetadataUID)
 		}
 	}
+	req[options.ServicePlayerGateway] = options.Gate.Address
+
 	//if ct := c.Binder.String(); ct != binder.Json.String() {
 	//	req[binder.ContentType] = ct
 	//}
